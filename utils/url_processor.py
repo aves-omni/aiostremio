@@ -1,9 +1,13 @@
 import base64
-from typing import Dict
+import os
+from typing import Dict, Optional
+from urllib.parse import urlencode
 
+import aiohttp
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 
+from utils.cache import cached_decorator
 from utils.config import config
 from utils.logger import logger
 
@@ -12,14 +16,81 @@ class URLProcessor:
     def __init__(self, encryption_key: bytes):
         self.fernet = Fernet(encryption_key)
         self.addon_url = config.addon_url
+        self.mediaflow_api_key = os.getenv("MEDIAFLOW_API_KEY")
 
-    def process_stream_urls(
+    @cached_decorator(ttl=3600)
+    async def _get_mediaflow_ip(self) -> str:
+        """Get MediaFlow proxy's public IP address."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{config.mediaflow_url}/proxy/ip",
+                headers={
+                    "accept": "application/json",
+                    "user-agent": "StremioAIO",
+                    "api_password": self.mediaflow_api_key,
+                },
+            ) as response:
+                if response.status != 200:
+                    raise HTTPException(
+                        status_code=500, detail="Failed to get MediaFlow IP"
+                    )
+                data = await response.json()
+                self._mediaflow_ip = data.get("ip")
+                return self._mediaflow_ip
+
+    async def _generate_mediaflow_url(self, url: str) -> str:
+        """Generate an encrypted MediaFlow URL."""
+        try:
+            mediaflow_ip = await self._get_mediaflow_ip()
+        except Exception as e:
+            logger.error(f"Failed to get MediaFlow IP: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to get MediaFlow IP")
+
+        params = {
+            "mediaflow_proxy_url": config.mediaflow_url,
+            "endpoint": "/proxy/stream",
+            "destination_url": url,
+            "query_params": {},
+            "request_headers": {
+                "referer": config.addon_url,
+                "origin": config.addon_url,
+            },
+            "response_headers": {},
+            "expiration": 14400,
+            # "ip": mediaflow_ip,
+            "api_password": self.mediaflow_api_key,
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{config.mediaflow_url}/generate_encrypted_or_encoded_url", json=params
+            ) as response:
+                if response.status != 200:
+                    raise HTTPException(
+                        status_code=500, detail="Failed to generate MediaFlow URL"
+                    )
+                data = await response.json()
+                logger.info(f"Generated MediaFlow URL: {data['encoded_url']}")
+                return data["encoded_url"]
+
+    async def process_stream_urls(
         self, streams: Dict[str, list], user_path: str, proxy_enabled: bool
     ) -> None:
         """Process URLs in streams, encrypting them if proxy is enabled."""
         for stream in streams:
-            if "url" in stream:
-                if proxy_enabled:
+            if "url" in stream and proxy_enabled:
+                if config.mediaflow_enabled and config.mediaflow_url:
+                    # Use MediaFlow URL encryption
+                    try:
+                        mediaflow_url = await self._generate_mediaflow_url(
+                            stream["url"]
+                        )
+                        stream["url"] = mediaflow_url
+                    except Exception as e:
+                        logger.error(f"Failed to generate MediaFlow URL: {str(e)}")
+                        streams.remove(stream)
+                        continue
+                else:
                     encrypted_url = self.fernet.encrypt(stream["url"].encode()).decode()
                     safe_encrypted_url = base64.urlsafe_b64encode(
                         encrypted_url.encode()
@@ -27,6 +98,7 @@ class URLProcessor:
                     proxy_url = (
                         f"{self.addon_url}/{user_path}/proxy/{safe_encrypted_url}"
                     )
+                    logger.info(f"Generated proxy URL: {proxy_url}")
                     stream["url"] = proxy_url
 
     def decrypt_url(self, encrypted_url: str) -> str:

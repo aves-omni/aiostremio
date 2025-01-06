@@ -280,7 +280,9 @@ async def stream(user_path: str, meta_id: str):
 
         regular_streams = [s for s in streams if s.get("name") != "Error"]
         process_stream_formatting(regular_streams)
-        url_processor.process_stream_urls(regular_streams, user_path, proxy_streams)
+        await url_processor.process_stream_urls(
+            regular_streams, user_path, proxy_streams
+        )
         return {"streams": streams}
     except Exception as e:
         logger.error(f"Error in stream endpoint: {str(e)}", exc_info=True)

@@ -29,7 +29,15 @@ class Config:
 
     @property
     def addon_url(self) -> str:
-        return self._config.get("addon_url", "https://debridproxy.stkc.win")
+        return self._config.get("addon_url")
+
+    @property
+    def mediaflow_url(self) -> str:
+        return self._config.get("mediaflow_url")
+
+    @property
+    def mediaflow_enabled(self) -> bool:
+        return self._config.get("mediaflow_enabled", True)
 
     @property
     def cache_ttl_seconds(self) -> int:
