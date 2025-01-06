@@ -1,0 +1,71 @@
+services:
+
+  debridproxy:
+    image: python:3.13-alpine
+    container_name: debridproxy
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8469:8469"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: sh -c "apk add gcc python3-dev musl-dev linux-headers &&
+             pip install uv &&
+             uv pip install --system -r requirements.txt &&
+             python main.py"
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8469"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      redis:
+        condition: service_healthy
+    mem_limit: 4G
+
+  redis:
+    image: redis:alpine
+    container_name: debridproxy_redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - ./docker-data/redis_data:/data
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1G
+

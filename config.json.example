@@ -1,0 +1,7 @@
+{
+    "debrid_service": "torbox",
+    "addon_url": "https://debridproxy.your-domain.com",
+    "cache_ttl_seconds": 60,
+    "buffer_size_mb": 256,
+    "chunk_size_mb": 4
+}

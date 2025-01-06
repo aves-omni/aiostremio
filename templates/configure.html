@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configure Debrid Proxy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .result pre {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .stats {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+        .active-users {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .notice {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #ffeb3b;
+            border: 1px solid #fbc02d;
+            color: #333;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Configure Debrid Proxy</h1>
+    
+    <div class="notice">
+        <p>Invite-only page. Ask for access or buy TorBox <a href="https://torbox.app/subscription?referral=fe897519-fa8d-402d-bdb6-15570c60eff2">here</a>.</p>
+    </div>
+
+    <div class="stats">
+        <h3>Active Users: <span id="activeCount" class="active-users">0</span></h3>
+    </div>
+
+    <form id="configForm">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Generate URL</button>
+    </form>
+
+    <div id="result" class="result">
+        <h3>Your Configuration URL:</h3>
+        <pre id="configUrl"></pre>
+    </div>
+
+    <script>
+        let pollingInterval;
+        const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+        let lastActivityTime = Date.now();
+
+        function startPolling() {
+            if (pollingInterval) return;
+            updateActiveUsers();
+            pollingInterval = setInterval(updateActiveUsers, 15000);
+            lastActivityTime = Date.now();
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        async function updateActiveUsers() {
+            // Check if we've exceeded the timeout
+            if (Date.now() - lastActivityTime > POLLING_TIMEOUT) {
+                stopPolling();
+                return;
+            }
+
+            try {
+                const response = await fetch('/active_users');
+                const data = await response.json();
+                document.getElementById('activeCount').textContent = data.count;
+            } catch (error) {
+                console.error('Error fetching active users:', error);
+            }
+        }
+
+        // Start/stop polling based on visibility
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopPolling();
+            } else {
+                startPolling();
+            }
+        });
+
+        // Initial start
+        if (!document.hidden) {
+            startPolling();
+        }
+
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                console.log('Sending request...');
+                
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const response = await fetch('/configure/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.url) {
+                    document.getElementById('configUrl').textContent = result.url;
+                    document.getElementById('result').style.display = 'block';
+                } else {
+                    alert(result.message || 'Error generating configuration');
+                }
+            } catch (error) {
+                console.error('Request failed:', error);
+                alert(`Error: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            padding: 8px;
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .user-list {
+            margin-top: 30px;
+        }
+        .stats {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+        .active-users {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Management</h1>
+    
+    <div class="stats">
+        <h3>Active Users: <span id="activeCount" class="active-users">0</span></h3>
+        <div id="activeUsers"></div>
+    </div>
+    
+    <form id="userForm">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="proxy_streams">Proxy Streams:</label>
+            <select id="proxy_streams" name="proxy_streams">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+        </div>
+        <button type="submit">Add User</button>
+    </form>
+
+    <div class="user-list">
+        <h2>Current Users</h2>
+        <ul>
+            {% for username, details in users.items() %}
+            <li>
+                {{ username }} 
+                - Proxy: <span id="proxy-{{ username }}">{{ 'On' if details.proxy_streams else 'Off' }}</span>
+                <button onclick="toggleProxy('{{ username }}')">Toggle Proxy</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script>
+        let pollingInterval;
+        const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+        let lastActivityTime = Date.now();
+
+        function startPolling() {
+            if (pollingInterval) return;
+            updateActiveUsers();
+            pollingInterval = setInterval(updateActiveUsers, 15000);
+            lastActivityTime = Date.now();
+        }
+
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
+        }
+
+        async function updateActiveUsers() {
+            // Check if we've exceeded the timeout
+            if (Date.now() - lastActivityTime > POLLING_TIMEOUT) {
+                stopPolling();
+                return;
+            }
+
+            try {
+                const response = await fetch('/active_users');
+                const data = await response.json();
+                
+                document.getElementById('activeCount').textContent = data.count;
+                document.getElementById('activeUsers').innerHTML = data.users.length > 0 
+                    ? `<p>Currently streaming: ${data.users.join(', ')}</p>`
+                    : '<p>No active streams</p>';
+            } catch (error) {
+                console.error('Error fetching active users:', error);
+            }
+        }
+
+        // Start/stop polling based on visibility
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopPolling();
+            } else {
+                startPolling();
+            }
+        });
+
+        // Initial start
+        if (!document.hidden) {
+            startPolling();
+        }
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/admin/add_user', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.status === 'success') {
+                    location.reload();
+                }
+            } catch (error) {
+                alert('Error adding user');
+            }
+        });
+
+        async function toggleProxy(username) {
+            try {
+                const response = await fetch(`/admin/toggle_proxy/${username}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    // Update the proxy status text
+                    const proxyStatusElement = document.getElementById(`proxy-${username}`);
+                    proxyStatusElement.textContent = result.proxy_streams ? 'On' : 'Off';
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Error toggling proxy');
+            }
+        }
+    </script>
+</body>
+</html>
