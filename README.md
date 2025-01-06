@@ -9,7 +9,7 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 ## Features:
 - Account system
 - Fetch links from multiple addons
-- Optional encryption of video URLs and proxy streams to bypass IP restrictions on debrid services (at your own risk) and avoid exposing your API keys/passwords
+- Optional encryption of video URLs and proxy streams (either with MediaFlow or built in proxy) to bypass IP restrictions on debrid services (at your own risk) and avoid exposing your API keys/passwords
 - Redis cache that instantly returns links already fetched by other users
 - Very easy to add support for new addons
 
