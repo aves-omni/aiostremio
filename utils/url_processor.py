@@ -30,7 +30,7 @@ class URLProcessor:
                 "origin": config.addon_url,
             },
             "response_headers": {},
-            "expiration": 14400,
+            "expiration": 2592000,
             "api_password": self.mediaflow_api_key,
         }
 

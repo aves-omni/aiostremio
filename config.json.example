@@ -3,7 +3,7 @@
     "addon_url": "https://debridproxy.your-domain.com",
     "mediaflow_url": "https://mediaflow.your-domain.com",
     "mediaflow_enabled": true,
-    "cache_ttl_seconds": 60,
+    "cache_ttl_seconds": 604800,
     "buffer_size_mb": 256,
     "chunk_size_mb": 4,
     "vidi_mode": false
