@@ -25,7 +25,7 @@ class Config:
 
     @property
     def debrid_service(self) -> str:
-        return self._config.get("debrid_service", "torbox")
+        return self._config.get("debrid_service")
 
     @property
     def addon_url(self) -> str:
@@ -50,6 +50,10 @@ class Config:
     @property
     def chunk_size_mb(self) -> int:
         return self._config.get("chunk_size_mb", 4)
+
+    @property
+    def vidi_mode(self) -> bool:
+        return self._config.get("vidi_mode", False)
 
 
 config = Config()

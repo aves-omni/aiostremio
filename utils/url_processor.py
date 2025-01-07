@@ -18,34 +18,8 @@ class URLProcessor:
         self.addon_url = config.addon_url
         self.mediaflow_api_key = os.getenv("MEDIAFLOW_API_KEY")
 
-    @cached_decorator(ttl=3600)
-    async def _get_mediaflow_ip(self) -> str:
-        """Get MediaFlow proxy's public IP address."""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{config.mediaflow_url}/proxy/ip",
-                headers={
-                    "accept": "application/json",
-                    "user-agent": "StremioAIO",
-                    "api_password": self.mediaflow_api_key,
-                },
-            ) as response:
-                if response.status != 200:
-                    raise HTTPException(
-                        status_code=500, detail="Failed to get MediaFlow IP"
-                    )
-                data = await response.json()
-                self._mediaflow_ip = data.get("ip")
-                return self._mediaflow_ip
-
     async def _generate_mediaflow_url(self, url: str) -> str:
         """Generate an encrypted MediaFlow URL."""
-        try:
-            mediaflow_ip = await self._get_mediaflow_ip()
-        except Exception as e:
-            logger.error(f"Failed to get MediaFlow IP: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to get MediaFlow IP")
-
         params = {
             "mediaflow_proxy_url": config.mediaflow_url,
             "endpoint": "/proxy/stream",
@@ -57,7 +31,6 @@ class URLProcessor:
             },
             "response_headers": {},
             "expiration": 14400,
-            # "ip": mediaflow_ip,
             "api_password": self.mediaflow_api_key,
         }
 

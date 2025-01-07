@@ -332,38 +332,39 @@ def process_stream_formatting(streams: list) -> None:
         trans = str.maketrans(normal_chars, bold_chars)
         return text.translate(trans)
 
-    service_processors = {
-        "Comet": lambda stream: (
-            "description",
-            f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
-        ),
-        "Easynews": lambda stream: (
-            "description",
-            f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description'].lstrip()}",
-        ),
-        "MediaFusion": lambda stream: (
-            "description",
-            f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
-        ),
-        "TorBox": lambda stream: (
-            "description",
-            f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
-        ),
-        "Torrentio": lambda stream: (
-            "title",
-            f"{stream.get('name', stream['service']).replace('\n', ' ')}\n{stream['title']}",
-        ),
-        # "Easynews+": lambda stream: (
-        #    "description",
-        #    f"┤ Easynews+ ├\n{stream['description']}",
-        # ),
-    }
+    # Vidi does not show titles such as "[RD+] Torrentio 4k" so we add it to the description
+    if config.vidi_mode:
+        service_processors = {
+            "Comet": lambda stream: (
+                "description",
+                f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
+            ),
+            "Easynews": lambda stream: (
+                "description",
+                f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description'].lstrip()}",
+            ),
+            "MediaFusion": lambda stream: (
+                "description",
+                f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
+            ),
+            "TorBox": lambda stream: (
+                "description",
+                f"{stream.get('name', stream['service']).replace('\n', '')}\n{stream['description']}",
+            ),
+            "Torrentio": lambda stream: (
+                "title",
+                f"{stream.get('name', stream['service']).replace('\n', ' ')}\n{stream['title']}",
+            )
+        }
 
-    for stream in streams:
-        service_name = stream.get("service")
-        if service_name in service_processors:
-            key, value = service_processors[service_name](stream)
-            stream[key] = value
+        for stream in streams:
+            service_name = stream.get("service")
+            if service_name in service_processors:
+                key, value = service_processors[service_name](stream)
+                stream[key] = value
+    # If Vidi mode is disabled, we don't format the streams
+    else:
+        pass
 
 
 @router.get("/{user_path}/manifest.json")

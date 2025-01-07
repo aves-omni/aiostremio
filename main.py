@@ -42,9 +42,9 @@ streaming_services = [
     service
     for service in [
         TorboxService() if config.debrid_service.lower() == "torbox" else None,
-        TorrentioService(),
-        CometService(),
-        MediaFusionService(),
+        TorrentioService() if config.debrid_service is not None else None,
+        CometService() if config.debrid_service is not None else None,
+        MediaFusionService() if os.getenv("MEDIAFUSION_OPTIONS") else None,
         (
             EasynewsService()
             if os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD")
