@@ -23,7 +23,7 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 
 ## Future Addon Support
 - Debridio (need testers with EasyDebrid)
-- EasyNews+ (exposes user+password in authorization headers)
+- Easynews+ (exposes user+password in authorization headers)
 
 ## Setup
 Requirements:
