@@ -56,7 +56,9 @@ class ServiceManager:
 
         final_streams = error_streams.copy()
 
-        # Interleave streams from different services
+        if "WatchHub" in service_streams_map:
+            all_streams.extend(service_streams_map.pop("WatchHub"))
+
         while any(service_streams_map.values()):
             for service_name in list(service_streams_map.keys()):
                 if service_streams_map[service_name]:
