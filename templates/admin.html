@@ -81,6 +81,7 @@
                 {{ username }} 
                 - Proxy: <span id="proxy-{{ username }}">{{ 'On' if details.proxy_streams else 'Off' }}</span>
                 <button onclick="toggleProxy('{{ username }}')">Toggle Proxy</button>
+                <button onclick="deleteUser('{{ username }}')" style="background-color: #dc3545;">Delete</button>
             </li>
             {% endfor %}
         </ul>
@@ -173,6 +174,26 @@
                 }
             } catch (error) {
                 alert('Error toggling proxy');
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/delete_user/${username}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Error deleting user');
             }
         }
     </script>

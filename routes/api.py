@@ -228,6 +228,29 @@ async def add_user(
     logger.info(f"New user added: {username} (proxy_streams: {proxy_streams})")
     return {"status": "success", "message": "User created successfully"}
 
+@router.delete("/admin/delete_user/{username}")
+async def delete_user(username: str, credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
+    if not admin_auth.verify_admin(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    users = load_users()
+    if username not in users:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if username in active_user_timestamps:
+        del active_user_timestamps[username]
+    if username in active_users:
+        del active_users[username]
+
+    del users[username]
+    save_users(users)
+
+    logger.info(f"User deleted: {username}")
+    return {"status": "success", "message": "User deleted successfully"}
 
 @router.post("/admin/toggle_proxy/{username}")
 async def toggle_proxy(
