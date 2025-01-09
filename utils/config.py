@@ -27,6 +27,14 @@ class Config:
     def debrid_service(self) -> str:
         return self._config.get("debrid_service")
 
+    def get_addon_debrid_service(self, addon_name: str) -> str:
+        addon_config = self._config.get("addon_config", {}).get(addon_name, {})
+        return addon_config.get("debrid_service", self.debrid_service)
+
+    def get_addon_debrid_api_key(self, addon_name: str) -> str:
+        addon_config = self._config.get("addon_config", {}).get(addon_name, {})
+        return addon_config.get("debrid_api_key", os.getenv("DEBRID_API_KEY"))
+
     @property
     def addon_url(self) -> str:
         return self._config.get("addon_url")

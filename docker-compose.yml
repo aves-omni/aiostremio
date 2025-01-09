@@ -1,21 +1,14 @@
 services:
 
   debridproxy:
-    image: python:3.13-alpine
+    build: .
     container_name: debridproxy
-    working_dir: /app
     volumes:
       - .:/app
     ports:
       - "8469:8469"
     env_file:
       - .env
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: sh -c "apk add gcc python3-dev musl-dev linux-headers &&
-             pip install uv &&
-             uv pip install --system -r requirements.txt &&
-             python main.py"
     restart: unless-stopped
     cap_drop:
       - ALL

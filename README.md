@@ -76,6 +76,19 @@ If using a debrid service, specify it here:
 ```
 "debrid_service": "torbox",
 ```
+If you want to use different debrid services for different addons, specify them here, otherwise leave blank:
+```
+"addon_config": {
+    "torrentio": {
+        "debrid_service": "",
+        "debrid_api_key": ""
+    },
+    "comet": {
+        "debrid_service": "",
+        "debrid_api_key": ""
+    }
+},
+```
 The domain where the addon and MediaFlow will be accessible:
 ```
 "addon_url": "https://debridproxy.your-domain.com",

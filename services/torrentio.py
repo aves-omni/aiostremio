@@ -13,8 +13,9 @@ from .base import StreamingService
 class TorrentioService(StreamingService):
     def __init__(self):
         self.base_url = "https://torrentio.strem.fun"
-        self.debrid_api_key = os.getenv("DEBRID_API_KEY")
-        self.options = f"debridoptions=nodownloadlinks,nocatalog|{config.debrid_service}={self.debrid_api_key}"
+        self.debrid_api_key = config.get_addon_debrid_api_key("torrentio")
+        self.debrid_service = config.get_addon_debrid_service("torrentio")
+        self.options = f"debridoptions=nodownloadlinks,nocatalog|{self.debrid_service}={self.debrid_api_key}"
 
     @property
     def name(self) -> str:

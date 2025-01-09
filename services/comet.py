@@ -14,7 +14,8 @@ from .base import StreamingService
 class CometService(StreamingService):
     def __init__(self):
         self.base_url = "https://comet.elfhosted.com"
-        self.debrid_api_key = os.getenv("DEBRID_API_KEY")
+        self.debrid_api_key = config.get_addon_debrid_api_key("comet")
+        self.debrid_service = config.get_addon_debrid_service("comet")
         self.options = f"""{{
             "indexers": ["bitsearch", "eztv", "thepiratebay", "therarbg", "yts"],
             "maxResults": 0,
@@ -25,7 +26,7 @@ class CometService(StreamingService):
             "resultFormat": ["All"],
             "resolutions": ["All"], 
             "languages": ["All"],
-            "debridService": "{config.debrid_service}",
+            "debridService": "{self.debrid_service}",
             "debridApiKey": "{self.debrid_api_key}",
             "stremthruUrl": "",
             "debridStreamProxyPassword": ""

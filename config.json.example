@@ -1,5 +1,15 @@
 {
     "debrid_service": "torbox",
+    "addon_config": {
+        "torrentio": {
+            "debrid_service": "",
+            "debrid_api_key": ""
+        },
+        "comet": {
+            "debrid_service": "",
+            "debrid_api_key": ""
+        }
+    },
     "addon_url": "https://debridproxy.your-domain.com",
     "mediaflow_url": "https://mediaflow.your-domain.com",
     "mediaflow_enabled": true,

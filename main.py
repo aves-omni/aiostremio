@@ -1,4 +1,5 @@
 import asyncio
+import httpx
 import os
 import time
 from collections import defaultdict
@@ -24,18 +25,6 @@ from utils.config import config
 from utils.logger import logger
 
 load_dotenv()
-
-if (
-    not os.getenv("DEBRID_SERVICE")
-    and not os.getenv("MEDIAFUSION_OPTIONS")
-    and not (os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD"))
-):
-    logger.error("You must configure a debrid service or Easynews.")
-    exit(1)
-
-if os.getenv("DEBRID_SERVICE") and not os.getenv("DEBRID_API_KEY"):
-    logger.error("A debrid service is configured but no API key is set.")
-    exit(1)
 
 # Order is reflected in Stremio
 streaming_services = [
@@ -165,5 +154,46 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(router)
 
 
+async def sanity_check():
+    logger.info(f"Performing sanity check...")
+
+    addon_urls = [service.base_url for service in streaming_services]
+
+    logger.info(f"Checking addons...")
+
+    for url in addon_urls:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            if response.status_code not in [200, 302, 307]:
+                logger.warning(f"Addons | ⚠️  {url}")
+            else:
+                logger.info(f"Addons | ✅ {url}")
+
+    logger.info(f"Checking config...")
+
+    if (
+        not os.getenv("DEBRID_SERVICE")
+        and not os.getenv("MEDIAFUSION_OPTIONS")
+        and not (os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD"))
+    ):
+        logger.warning(f"Config | ⚠️ No services configured")
+        exit(1)
+
+    if os.getenv("DEBRID_SERVICE") and not os.getenv("DEBRID_API_KEY"):
+        logger.warning(f"Config | ⚠️ Default debrid service is configured but no API key is set.")
+        exit(1)
+
+    for service_name in config._config.get("addon_config", {}).keys():
+        debrid_service = config.get_addon_debrid_service(service_name)
+        debrid_api_key = config.get_addon_debrid_api_key(service_name)
+        if not debrid_api_key:
+            logger.info(f"Config | ➡️  Using {config.debrid_service} for {service_name}")
+        else:
+            logger.info(f"Config | ✅ Using {debrid_service} for {service_name}")
+
+    logger.info("Sanity check passed!")
+
+
 if __name__ == "__main__":
+    asyncio.run(sanity_check())
     uvicorn.run(app, host="0.0.0.0", port=8469)
