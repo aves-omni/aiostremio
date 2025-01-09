@@ -22,6 +22,7 @@ from services.mediafusion import MediaFusionService
 from services.torbox import TorboxService
 from services.torrentio import TorrentioService
 from services.debridio import DebridioService
+from services.watchhub import WatchHubService
 from utils.cache import get_cache_info
 from utils.config import config
 from utils.logger import logger
@@ -32,6 +33,7 @@ load_dotenv()
 streaming_services = [
     service
     for service in [
+        WatchHubService(),
         TorboxService() if config.debrid_service.lower() == "torbox" else None,
         TorrentioService() if config.debrid_service is not None else None,
         CometService() if config.debrid_service is not None else None,

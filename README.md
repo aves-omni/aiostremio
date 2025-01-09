@@ -15,15 +15,13 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 - Very easy to add support for new addons
 
 ## Supported Stremio Addons
-- Torrentio
-- Comet
-- MediaFusion
-- TorBox
-- Easynews
-- Debridio
-
-## Future Addon Support
-- Easynews+ (exposes user+password in authorization headers)
+- [Torrentio](https://torrentio.strem.fun/)
+- [Comet](https://comet.elfhosted.com/)
+- [MediaFusion](https://mediafusion.elfhosted.com/)
+- [TorBox](https://torbox.app/)
+- [Easynews](https://ea627ddf0ee7-easynews.baby-beamup.club/)
+- [Debridio](https://debridio.adobotec.com/)
+- [WatchHub](https://watchhub.stkc.win/)
 
 ## Setup
 Requirements:
