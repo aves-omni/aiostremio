@@ -186,8 +186,8 @@ async def sanity_check():
     for service_name in config._config.get("addon_config", {}).keys():
         debrid_service = config.get_addon_debrid_service(service_name)
         debrid_api_key = config.get_addon_debrid_api_key(service_name)
-        if not debrid_api_key:
-            logger.info(f"Config | ➡️  Using {config.debrid_service} for {service_name}")
+        if debrid_service == config.debrid_service:
+            logger.info(f"Config | ✅ Using default debrid service ({debrid_service}) for {service_name}")
         else:
             logger.info(f"Config | ✅ Using {debrid_service} for {service_name}")
 
