@@ -21,7 +21,7 @@ class URLProcessor:
     async def _generate_mediaflow_url(self, url: str) -> str:
         """Generate an encrypted MediaFlow URL."""
         params = {
-            "mediaflow_proxy_url": config.mediaflow_url,
+            "mediaflow_proxy_url": config.external_mediaflow_url,
             "endpoint": "/proxy/stream",
             "destination_url": url,
             "query_params": {},
@@ -36,7 +36,7 @@ class URLProcessor:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                f"{config.mediaflow_url}/generate_encrypted_or_encoded_url", json=params
+                f"{config.internal_mediaflow_url}/generate_encrypted_or_encoded_url", json=params
             ) as response:
                 if response.status != 200:
                     raise HTTPException(
@@ -52,7 +52,7 @@ class URLProcessor:
         """Process URLs in streams, encrypting them if proxy is enabled."""
         for stream in streams:
             if "url" in stream and proxy_enabled:
-                if config.mediaflow_enabled and config.mediaflow_url:
+                if config.mediaflow_enabled and config.external_mediaflow_url:
                     # Use MediaFlow URL encryption
                     try:
                         mediaflow_url = await self._generate_mediaflow_url(

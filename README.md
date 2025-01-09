@@ -93,10 +93,17 @@ If you want to use different debrid services for different addons, specify them 
     }
 },
 ```
-The domain where the addon and MediaFlow will be accessible:
+The domain where the addon will be accessible:
 ```
 "addon_url": "https://debridproxy.your-domain.com",
-"mediaflow_url": "https://mediaflow.your-domain.com",
+```
+The domain used when generating links, leave as default unless using another instance (ElfHosted, etc.):
+```
+"mediaflow_url": "http://debridproxy_mediaflow:8888",
+```
+The domain returned in the generated links, leave as default unless using another instance:
+```
+"external_mediaflow_url": "https://mediaflow.your-domain.com",
 ```
 When disabled, the addon will use the built-in proxy streaming. Unless you experience issues with MediaFlow, leave this set to true:
 ```

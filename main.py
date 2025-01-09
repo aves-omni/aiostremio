@@ -1,3 +1,4 @@
+import json
 import asyncio
 import httpx
 import os
@@ -161,17 +162,36 @@ async def sanity_check():
 
     addon_urls = [service.base_url for service in streaming_services]
 
-    logger.info(f"Checking addons...")
+    logger.info(f"Addons | Checking addons...")
 
     for url in addon_urls:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             if response.status_code not in [200, 302, 307]:
-                logger.warning(f"Addons | ⚠️  {url}")
+                logger.warning(f"Addons | ⚠️ {url}")
             else:
                 logger.info(f"Addons | ✅ {url}")
 
-    logger.info(f"Checking config...")
+    logger.info(f"Config | Checking config...")
+
+    with open("config.json.example", "r") as f:
+        example_config = json.load(f)
+
+    def validate_config_structure(example: dict, current: dict, path: str = ""):
+        for key, value in example.items():
+            current_path = f"{path}.{key}" if path else key
+            if key not in current:
+                logger.warning(f"Config | ⚠️ The config is outdated (missing {current_path})")
+                exit(1)
+            if isinstance(value, dict):
+                if not isinstance(current[key], dict):
+                    logger.warning(f"Config | ⚠️ The config is malformed (expected dict for {current_path} but got {type(current[key])})")
+                    exit(1)
+                validate_config_structure(value, current[key], current_path)
+
+    validate_config_structure(example_config, config._config)
+
+    logger.info(f"Config | ✅ The config is up to date")
 
     if (
         not config.debrid_service
@@ -182,7 +202,7 @@ async def sanity_check():
         exit(1)
 
     if config.debrid_service and not os.getenv("DEBRID_API_KEY"):
-        logger.warning(f"Config | ⚠️ Default debrid service is configured but no API key is set.")
+        logger.warning(f"Config | ⚠️ Default debrid service is configured but no API key is set")
         exit(1)
 
     for service_name in config._config.get("addon_config", {}).keys():
@@ -191,9 +211,9 @@ async def sanity_check():
         if service_name == "debridio" and debrid_api_key == os.getenv("DEBRID_API_KEY") and debrid_service != config.debrid_service:
             continue
         if debrid_service == config.debrid_service:
-            logger.info(f"Config | ✅ Using default debrid service ({debrid_service}) for {service_name}")
+            logger.info(f"Config | *️⃣ Using default debrid service ({debrid_service}) for {service_name}")
         else:
-            logger.info(f"Config | ✅ Using {debrid_service} for {service_name}")
+            logger.info(f"Config | *️⃣ Using {debrid_service} for {service_name}")
 
 
 if __name__ == "__main__":

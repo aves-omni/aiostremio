@@ -42,8 +42,12 @@ class Config:
         return self._config.get("addon_url")
 
     @property
-    def mediaflow_url(self) -> str:
+    def internal_mediaflow_url(self) -> str:
         return self._config.get("mediaflow_url")
+
+    @property
+    def external_mediaflow_url(self) -> str:
+        return self._config.get("external_mediaflow_url")
 
     @property
     def mediaflow_enabled(self) -> bool:
