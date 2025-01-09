@@ -20,6 +20,7 @@ from services.easynews import EasynewsService
 from services.mediafusion import MediaFusionService
 from services.torbox import TorboxService
 from services.torrentio import TorrentioService
+from services.debridio import DebridioService
 from utils.cache import get_cache_info
 from utils.config import config
 from utils.logger import logger
@@ -39,6 +40,7 @@ streaming_services = [
             if os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD")
             else None
         ),
+        DebridioService() if config.get_addon_debrid_api_key("debridio") != os.getenv("DEBRID_API_KEY") and config.get_addon_debrid_service("debridio") != config.debrid_service else None,
     ]
     if service is not None
 ]
@@ -172,26 +174,26 @@ async def sanity_check():
     logger.info(f"Checking config...")
 
     if (
-        not os.getenv("DEBRID_SERVICE")
+        not config.debrid_service
         and not os.getenv("MEDIAFUSION_OPTIONS")
         and not (os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD"))
     ):
         logger.warning(f"Config | ⚠️ No services configured")
         exit(1)
 
-    if os.getenv("DEBRID_SERVICE") and not os.getenv("DEBRID_API_KEY"):
+    if config.debrid_service and not os.getenv("DEBRID_API_KEY"):
         logger.warning(f"Config | ⚠️ Default debrid service is configured but no API key is set.")
         exit(1)
 
     for service_name in config._config.get("addon_config", {}).keys():
         debrid_service = config.get_addon_debrid_service(service_name)
         debrid_api_key = config.get_addon_debrid_api_key(service_name)
+        if service_name == "debridio" and debrid_api_key == os.getenv("DEBRID_API_KEY") and debrid_service != config.debrid_service:
+            continue
         if debrid_service == config.debrid_service:
             logger.info(f"Config | ✅ Using default debrid service ({debrid_service}) for {service_name}")
         else:
             logger.info(f"Config | ✅ Using {debrid_service} for {service_name}")
-
-    logger.info("Sanity check passed!")
 
 
 if __name__ == "__main__":

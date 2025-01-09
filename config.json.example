@@ -8,6 +8,10 @@
         "comet": {
             "debrid_service": "",
             "debrid_api_key": ""
+        },
+        "debridio": {
+            "debrid_service": "easydebrid",
+            "debrid_api_key": ""
         }
     },
     "addon_url": "https://debridproxy.your-domain.com",

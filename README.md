@@ -20,9 +20,9 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 - MediaFusion
 - TorBox
 - Easynews
+- Debridio
 
 ## Future Addon Support
-- Debridio (need testers with EasyDebrid)
 - Easynews+ (exposes user+password in authorization headers)
 
 ## Setup
@@ -85,6 +85,10 @@ If you want to use different debrid services for different addons, specify them 
     },
     "comet": {
         "debrid_service": "",
+        "debrid_api_key": ""
+    },
+    "debridio": {
+        "debrid_service": "easydebrid",
         "debrid_api_key": ""
     }
 },
