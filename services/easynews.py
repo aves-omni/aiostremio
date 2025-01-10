@@ -39,4 +39,8 @@ class EasynewsService(StreamingService):
         streams = data.get("streams", [])
         for stream in streams:
             stream["service"] = self.name
+
+            # Easynews doesn't have a cache
+            stream["is_cached"] = True
+
         return streams

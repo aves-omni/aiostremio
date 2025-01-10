@@ -15,7 +15,7 @@ class TorrentioService(StreamingService):
         self.base_url = "https://torrentio.strem.fun"
         self.debrid_api_key = config.get_addon_debrid_api_key("torrentio")
         self.debrid_service = config.get_addon_debrid_service("torrentio")
-        self.options = f"debridoptions=nodownloadlinks,nocatalog|{self.debrid_service}={self.debrid_api_key}"
+        self.options = f"debridoptions=nocatalog|{self.debrid_service}={self.debrid_api_key}"
 
     @property
     def name(self) -> str:
@@ -40,4 +40,12 @@ class TorrentioService(StreamingService):
         streams = data.get("streams", [])
         for stream in streams:
             stream["service"] = self.name
+
+            stream_name = stream.get("name", "")
+            if stream_name.startswith("["):
+                prefix = stream_name[1:stream_name.find("]")] if "]" in stream_name else ""
+                stream["is_cached"] = "+" in prefix
+            else:
+                stream["is_cached"] = True
+
         return streams

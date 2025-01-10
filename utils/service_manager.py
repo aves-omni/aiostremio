@@ -56,9 +56,24 @@ class ServiceManager:
 
         final_streams = error_streams.copy()
 
+        # Add WatchHub streams first
         if "WatchHub" in service_streams_map:
             all_streams.extend(service_streams_map.pop("WatchHub"))
 
+        # First interleave cached streams
+        while any(service_streams_map.values()):
+            found_cached = False
+            for service_name in list(service_streams_map.keys()):
+                streams = service_streams_map[service_name]
+                if streams and streams[0].get("is_cached", False):
+                    found_cached = True
+                    all_streams.append(streams.pop(0))
+                if not streams:
+                    del service_streams_map[service_name]
+            if not found_cached:
+                break
+
+        # Then interleave remaining uncached streams
         while any(service_streams_map.values()):
             for service_name in list(service_streams_map.keys()):
                 if service_streams_map[service_name]:

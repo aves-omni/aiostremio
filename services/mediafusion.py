@@ -38,4 +38,8 @@ class MediaFusionService(StreamingService):
         streams = data.get("streams", [])
         for stream in streams:
             stream["service"] = self.name
+
+            if "⚡" in stream["name"]:
+                stream["is_cached"] = True
+
         return streams

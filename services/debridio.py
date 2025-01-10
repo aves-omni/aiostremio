@@ -42,4 +42,8 @@ class DebridioService(StreamingService):
         streams = data.get("streams", [])
         for stream in streams:
             stream["service"] = self.name
+
+            # Debridio streams are always cached
+            stream["is_cached"] = True
+
         return streams
