@@ -147,5 +147,6 @@ Torrentio, Comet, MediaFusion, and all other upstream addons - Used for fetching
 [MediaFlow](https://github.com/mhdzumair/mediaflow-proxy) - Used for proxy streams
 
 ## Notes
-- MediaFlow is recommended for video proxying, though you can use the internal proxy by editing the config if you have issues.
-- AIOStremio is primarily tested with TorBox. Please open an issue if other debrid services do not work.
+- MediaFlow is recommended for video proxying, though you can use the internal proxy by editing the config if you have issues
+- AIOStremio is primarily tested with TorBox. Please open an issue if other debrid services do not work
+- Bypassing IP restrictions on debrid services is experimental
