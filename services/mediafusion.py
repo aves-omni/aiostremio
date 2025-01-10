@@ -33,7 +33,7 @@ class MediaFusionService(StreamingService):
 
     async def get_streams(self, meta_id: str) -> List[Dict]:
         url = f"{self.base_url}/{self.options}/stream/{meta_id}"
-        logger.info(f"MediaFusion stream url: {url}")
+        logger.debug(f"MediaFusion stream url: {url}")
         data = await self._fetch_from_mediafusion(url)
         streams = data.get("streams", [])
         for stream in streams:

@@ -31,7 +31,7 @@ class WatchHubService(StreamingService):
 
     async def get_streams(self, meta_id: str) -> List[Dict]:
         url = f"{self.base_url}/stream/{meta_id}"
-        logger.info(f"WatchHub stream url: {url}")
+        logger.debug(f"WatchHub stream url: {url}")
         data = await self._fetch_from_watchhub(url)
         streams = data.get("streams", [])
         for stream in streams:

@@ -9,9 +9,10 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 ## Features
 - Account system
 - Fetch links from multiple addons
-- Manually fetch and cache all links for a specific title using `python3 build_cache.py [--series|--movie] [IMDb ID]` (do not abuse this or you will likely get IP banned from the upstream addons)
+- Redis cache that instantly returns already fetched links
+- Automatically cache all episodes in a season when any episode from that season is requested
+- Manually cache links for a specific title using `python3 build_cache.py [--series|--movie] [IMDb ID]`
 - Optional encryption of video URLs and proxy streams to bypass IP restrictions on debrid services (at your own risk) and avoid exposing your API keys/passwords
-- Redis cache that instantly returns links already fetched by other users
 - Very easy to add support for new addons
 
 ## Supported Stremio Addons

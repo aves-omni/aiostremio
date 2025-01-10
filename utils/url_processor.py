@@ -2,6 +2,7 @@ import base64
 import os
 from typing import Dict, Optional
 from urllib.parse import urlencode
+import asyncio
 
 import aiohttp
 from cryptography.fernet import Fernet
@@ -10,6 +11,7 @@ from fastapi import HTTPException
 from utils.cache import cached_decorator
 from utils.config import config
 from utils.logger import logger
+from utils.season_cache import cache_season
 
 
 class URLProcessor:
@@ -43,13 +45,18 @@ class URLProcessor:
                         status_code=500, detail="Failed to generate MediaFlow URL"
                     )
                 data = await response.json()
-                logger.info(f"Generated MediaFlow URL: {data['encoded_url']}")
+                logger.debug(f"Generated MediaFlow URL: {data['encoded_url']}")
                 return data["encoded_url"]
 
     async def process_stream_urls(
-        self, streams: Dict[str, list], user_path: str, proxy_enabled: bool
+        self, streams: Dict[str, list], user_path: str, proxy_enabled: bool, meta_id: str = None
     ) -> None:
         """Process URLs in streams, encrypting them if proxy is enabled."""
+        # Start season caching if this is a series episode
+        if meta_id and ":" in meta_id and meta_id.count(":") == 2:
+            logger.info(f"Triggering background caching for season of {meta_id}")
+            asyncio.create_task(cache_season(meta_id))
+
         for stream in streams:
             if "url" in stream and proxy_enabled:
                 if config.mediaflow_enabled and config.external_mediaflow_url:

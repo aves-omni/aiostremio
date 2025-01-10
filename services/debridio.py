@@ -37,7 +37,7 @@ class DebridioService(StreamingService):
 
     async def get_streams(self, meta_id: str) -> List[Dict]:
         url = f"{self.base_url}/{self.options_encoded}/stream/{meta_id}"
-        logger.info(f"Debridio stream url: {url}")
+        logger.debug(f"Debridio stream url: {url}")
         data = await self._fetch_from_debridio(url)
         streams = data.get("streams", [])
         for stream in streams:

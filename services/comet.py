@@ -51,7 +51,7 @@ class CometService(StreamingService):
 
     async def get_streams(self, meta_id: str) -> List[Dict]:
         url = f"{self.base_url}/{self.options_encoded}/stream/{meta_id}"
-        logger.info(f"Comet stream url: {url}")
+        logger.debug(f"Comet stream url: {url}")
         data = await self._fetch_from_comet(url)
         streams = data.get("streams", [])
         for stream in streams:

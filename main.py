@@ -3,6 +3,7 @@ import asyncio
 import httpx
 import os
 import time
+import logging
 from collections import defaultdict
 from contextlib import asynccontextmanager
 
@@ -28,6 +29,8 @@ from utils.config import config
 from utils.logger import logger
 
 load_dotenv()
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Order is reflected in Stremio
 streaming_services = [
@@ -220,4 +223,15 @@ async def sanity_check():
 
 if __name__ == "__main__":
     asyncio.run(sanity_check())
-    uvicorn.run(app, host="0.0.0.0", port=8469)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8469,
+        log_config={
+            "version": 1,
+            "disable_existing_loggers": False,
+            "loggers": {
+                "uvicorn.access": {"level": "WARNING"},
+            },
+        },
+    )

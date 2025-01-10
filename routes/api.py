@@ -3,6 +3,7 @@ import json
 import os
 import time
 from collections import defaultdict
+import copy
 
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -10,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
 
-from utils.cache import cached_decorator
+from utils.cache import cached_decorator, cache
 from utils.config import config
 from utils.logger import logger
 from utils.service_manager import ServiceManager
@@ -281,13 +282,6 @@ async def toggle_proxy(
 
 
 @router.get("/{user_path}/stream/{meta_id:path}")
-@cached_decorator(
-    ttl=CACHE_TTL,
-    key_prefix=lambda *args, **kwargs: (
-        f"stream:{kwargs['meta_id']}:"
-        f"{load_users().get(kwargs['user_path'].split('|')[0].split('=')[1], {}).get('proxy_streams', True)}"
-    ),
-)
 async def stream(user_path: str, meta_id: str):
     username, proxy_streams = await verify_user(user_path)
     if rate_limiter.is_rate_limited(username):
@@ -297,16 +291,48 @@ async def stream(user_path: str, meta_id: str):
     active_users[username] = 1
 
     try:
-        streams = await service_manager.fetch_all_streams(meta_id)
-        if not streams:
-            raise HTTPException(status_code=404, detail="No streams found")
+        proxy_key = f"stream:{meta_id}:True"
+        direct_key = f"stream:{meta_id}:False"
+        
+        # Try to get streams from cache first
+        streams = None
+        if proxy_streams:
+            streams = await cache.get(proxy_key)
+        else:
+            streams = await cache.get(direct_key)
 
-        regular_streams = [s for s in streams if s.get("name") != "Error"]
-        process_stream_formatting(regular_streams)
-        await url_processor.process_stream_urls(
-            regular_streams, user_path, proxy_streams
-        )
-        return {"streams": streams}
+        # If not in cache, fetch fresh streams
+        if not streams:
+            original_streams = await service_manager.fetch_all_streams(meta_id)
+            if not original_streams:
+                raise HTTPException(status_code=404, detail="No streams found")
+
+            regular_streams = [s for s in original_streams if s.get("name") != "Error"]
+            process_stream_formatting(regular_streams)
+
+            direct_streams = {"streams": copy.deepcopy(regular_streams)}
+            proxy_streams_copy = {"streams": copy.deepcopy(regular_streams)}
+
+            users = load_users()
+            user_data = users[username]
+            username_part = f"user={username}"
+            password_part = f"password={user_data['password']}"
+
+            user_path = f"{username_part}|{password_part}"
+
+            await url_processor.process_stream_urls(
+                proxy_streams_copy["streams"], user_path, True, meta_id=meta_id
+            )
+            await url_processor.process_stream_urls(
+                direct_streams["streams"], user_path, False, meta_id=meta_id
+            )
+
+            await cache.set(proxy_key, proxy_streams_copy, ttl=CACHE_TTL)
+            await cache.set(direct_key, direct_streams, ttl=CACHE_TTL)
+
+            return proxy_streams_copy if proxy_streams else direct_streams
+
+        return streams
     except Exception as e:
         logger.error(f"Error in stream endpoint: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
