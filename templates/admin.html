@@ -44,6 +44,33 @@
             color: #28a745;
             font-weight: bold;
         }
+        .services-dropdown {
+            position: relative;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .services-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            padding: 12px;
+            z-index: 1;
+        }
+        .services-content.show {
+            display: block;
+        }
+        .services-content label {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .services-content input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -77,11 +104,23 @@
         <h2>Current Users</h2>
         <ul>
             {% for username, details in users.items() %}
-            <li>
-                {{ username }} 
+            <li data-username="{{ username }}">
+                <span class="username">{{ username }}</span>
                 - Proxy: <span id="proxy-{{ username }}">{{ 'On' if details.proxy_streams else 'Off' }}</span>
                 <button onclick="toggleProxy('{{ username }}')">Toggle Proxy</button>
                 <button onclick="deleteUser('{{ username }}')" style="background-color: #dc3545;">Delete</button>
+                <div class="services-dropdown">
+                    <button type="button" onclick="toggleServices('{{ username }}')" style="background-color: #28a745;">Toggle Addons</button>
+                    <div id="services-{{ username }}" class="services-content">
+                        <form id="services-form-{{ username }}" onsubmit="return false;">
+                            <div id="services-checkboxes-{{ username }}">
+                                <!-- Services will be populated by JavaScript -->
+                                <p>Loading services...</p>
+                            </div>
+                            <button type="submit" style="margin-top: 10px;">Save Services</button>
+                        </form>
+                    </div>
+                </div>
             </li>
             {% endfor %}
         </ul>
@@ -91,6 +130,146 @@
         let pollingInterval;
         const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
         let lastActivityTime = Date.now();
+        let availableServices = [];
+
+        // Fetch available services when page loads
+        async function fetchAvailableServices() {
+            try {
+                const response = await fetch('/admin/available_services');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch services: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                console.log('Available services response:', data);
+                
+                if (!data.services || !Array.isArray(data.services)) {
+                    console.error('Invalid services data format:', data);
+                    throw new Error('Invalid services data format received from server');
+                }
+                
+                availableServices = data.services;
+                console.log('Processed available services:', availableServices);
+                
+                if (availableServices.length === 0) {
+                    console.warn('No services available from server');
+                }
+                
+                // Initialize service checkboxes for all users
+                const users = document.querySelectorAll('.services-dropdown');
+                console.log('Found users to process:', users.length);
+                
+                users.forEach(user => {
+                    const userElement = user.closest('li');
+                    if (!userElement) {
+                        console.warn('Could not find li element for user dropdown');
+                        return;
+                    }
+                    const username = userElement.getAttribute('data-username');
+                    if (!username) {
+                        console.warn('Could not find username in data attribute');
+                        return;
+                    }
+                    console.log('Processing services for user:', username);
+                    populateServiceCheckboxes(username);
+                });
+            } catch (error) {
+                console.error('Error in fetchAvailableServices:', error);
+                // Display error in UI
+                const users = document.querySelectorAll('.services-dropdown');
+                users.forEach(user => {
+                    const container = user.querySelector('.services-content');
+                    if (container) {
+                        container.innerHTML = `<p style="color: red;">Error loading services: ${error.message}</p>`;
+                    }
+                });
+            }
+        }
+
+        function populateServiceCheckboxes(username) {
+            const container = document.getElementById(`services-checkboxes-${username}`);
+            if (!container) {
+                console.error(`Container lookup failed for user ${username}. Full element ID: services-checkboxes-${username}`);
+                return;
+            }
+
+            fetch(`/admin/user_services/${username}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const userServices = data.enabled_services || [];
+                    
+                    if (availableServices.length === 0) {
+                        container.innerHTML = '<p>No services available</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = `
+                        <p style="font-style: italic; color: #666; margin-bottom: 8px;">Note: If no addons are selected they will all be enabled.</p>
+                        ${availableServices.map(service => `
+                        <label>
+                            <input type="checkbox" name="services" value="${service}"
+                                   ${userServices.includes(service) ? 'checked' : ''}>
+                            ${service}
+                        </label>
+                    `).join('')}`;
+                })
+                .catch(error => {
+                    console.error(`Error loading services for ${username}:`, error);
+                    container.innerHTML = `<p style="color: red;">Error loading services: ${error.message}</p>`;
+                });
+        }
+
+        function toggleServices(username) {
+            const dropdown = document.getElementById(`services-${username}`);
+            dropdown.classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.services-dropdown button') && 
+                !event.target.matches('.services-content *')) {
+                const dropdowns = document.getElementsByClassName('services-content');
+                for (const dropdown of dropdowns) {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('submit', async function(e) {
+            if (e.target.id.startsWith('services-form-')) {
+                e.preventDefault();
+                const username = e.target.id.replace('services-form-', '');
+                const formData = new FormData(e.target);
+                const services = formData.getAll('services');
+                
+                try {
+                    const response = await fetch(`/admin/update_services/${username}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        alert('Services updated successfully');
+                        toggleServices(username); // Close the dropdown
+                    } else {
+                        throw new Error(result.message || 'Failed to update services');
+                    }
+                } catch (error) {
+                    console.error(`Error updating services for ${username}:`, error);
+                    alert(`Error updating services: ${error.message}`);
+                }
+            }
+        });
+
+        fetchAvailableServices();
 
         function startPolling() {
             if (pollingInterval) return;
@@ -107,7 +286,6 @@
         }
 
         async function updateActiveUsers() {
-            // Check if we've exceeded the timeout
             if (Date.now() - lastActivityTime > POLLING_TIMEOUT) {
                 stopPolling();
                 return;
@@ -126,7 +304,6 @@
             }
         }
 
-        // Start/stop polling based on visibility
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopPolling();
@@ -135,7 +312,6 @@
             }
         });
 
-        // Initial start
         if (!document.hidden) {
             startPolling();
         }
@@ -166,7 +342,6 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    // Update the proxy status text
                     const proxyStatusElement = document.getElementById(`proxy-${username}`);
                     proxyStatusElement.textContent = result.proxy_streams ? 'On' : 'Off';
                 } else {

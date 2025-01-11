@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 from typing import Dict, List
 
 from services.base import StreamingService
@@ -7,14 +9,28 @@ from utils.logger import logger
 
 class ServiceManager:
     def __init__(self, services: List[StreamingService]):
-        self.services = services
+        self.all_services = services
+        self.users_file = "db/users.json"
 
-    async def fetch_all_streams(self, meta_id: str) -> List[Dict]:
-        """Fetch streams from all services concurrently and process them."""
+    def _get_user_services(self, user: str) -> List[str]:
+        """Get list of enabled service names for a user"""
+        if not os.path.exists(self.users_file):
+            return []
+            
+        with open(self.users_file, "r") as f:
+            users = json.load(f)
+            
+        if user not in users:
+            return []
+            
+        return users[user].get("enabled_services", [])
+
+    async def fetch_all_streams(self, meta_id: str, user: str = None) -> List[Dict]:
+        """Fetch streams from all services concurrently."""
         service_streams_list = await asyncio.gather(
             *[
                 self._fetch_service_streams(service, meta_id)
-                for service in self.services
+                for service in self.all_services
             ]
         )
 
@@ -26,6 +42,8 @@ class ServiceManager:
         """Fetch streams from a single service with error handling."""
         try:
             streams = await service.get_streams(meta_id)
+            for stream in streams:
+                stream["service"] = service.name
             return streams
         except Exception as e:
             error_message = f"Error fetching streams from {service.name}:\n{str(e)}"
@@ -35,6 +53,7 @@ class ServiceManager:
                     "name": "Error",
                     "title": f"""❌ {service.name}: {str(e)}""",
                     "url": "https://example.com/",
+                    "service": service.name
                 }
             ]
 
@@ -86,4 +105,4 @@ class ServiceManager:
 
     def get_enabled_services(self) -> List[str]:
         """Get list of enabled service names."""
-        return [service.name for service in self.services]
+        return [service.name for service in self.all_services]

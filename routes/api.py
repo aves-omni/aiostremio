@@ -223,7 +223,11 @@ async def add_user(
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed_password = pwd_context.hash(password)
     safe_hash = base64.urlsafe_b64encode(hashed_password.encode()).decode()
-    users[username] = {"password": safe_hash, "proxy_streams": proxy_streams}
+    users[username] = {
+        "password": safe_hash,
+        "proxy_streams": proxy_streams,
+        "enabled_services": []
+    }
     save_users(users)
 
     logger.info(f"New user added: {username} (proxy_streams: {proxy_streams})")
@@ -281,6 +285,57 @@ async def toggle_proxy(
     }
 
 
+@router.get("/admin/available_services")
+async def get_available_services(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
+    if not admin_auth.verify_admin(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return {"services": [service.name for service in streaming_services]}
+
+@router.get("/admin/user_services/{username}")
+async def get_user_services(username: str, credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
+    if not admin_auth.verify_admin(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    users = load_users()
+    if username not in users:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"enabled_services": users[username].get("enabled_services", [])}
+
+@router.post("/admin/update_services/{username}")
+async def update_user_services(username: str, request: Request, credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
+    if not admin_auth.verify_admin(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    users = load_users()
+    if username not in users:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    form_data = await request.form()
+    services = form_data.getlist("services")
+    
+    # Validate that all services exist
+    available_services = [service.name for service in streaming_services]
+    for service in services:
+        if service not in available_services:
+            raise HTTPException(status_code=400, detail=f"Invalid service: {service}")
+    
+    if set(services) == set(available_services):
+        services = []
+    
+    users[username]["enabled_services"] = services
+    save_users(users)
+    return {"status": "success", "message": "Services updated successfully"}
+
 @router.get("/{user_path}/stream/{meta_id:path}")
 async def stream(user_path: str, meta_id: str):
     username, proxy_streams = await verify_user(user_path)
@@ -291,48 +346,60 @@ async def stream(user_path: str, meta_id: str):
     active_users[username] = 1
 
     try:
-        proxy_key = f"stream:{meta_id}:True"
-        direct_key = f"stream:{meta_id}:False"
+        users = load_users()
+        user_data = users[username]
+        enabled_services = user_data.get("enabled_services", [])
         
-        # Try to get streams from cache first
-        streams = None
-        if proxy_streams:
-            streams = await cache.get(proxy_key)
-        else:
-            streams = await cache.get(direct_key)
+        proxy_key = f"stream:{meta_id}:all:True"
+        direct_key = f"stream:{meta_id}:all:False"
 
-        # If not in cache, fetch fresh streams
-        if not streams:
-            original_streams = await service_manager.fetch_all_streams(meta_id)
+        logger.info(f"Request from {username} ({proxy_key if proxy_streams else direct_key})")
+        
+        cache_key = proxy_key if proxy_streams else direct_key
+        cached_streams = await cache.get(cache_key)
+
+        if cached_streams:
+            all_streams = cached_streams["streams"]
+        else:
+            original_streams = await service_manager.fetch_all_streams(meta_id, username)
+            
             if not original_streams:
                 raise HTTPException(status_code=404, detail="No streams found")
 
             regular_streams = [s for s in original_streams if s.get("name") != "Error"]
             process_stream_formatting(regular_streams)
 
-            direct_streams = {"streams": copy.deepcopy(regular_streams)}
-            proxy_streams_copy = {"streams": copy.deepcopy(regular_streams)}
-
-            users = load_users()
-            user_data = users[username]
             username_part = f"user={username}"
             password_part = f"password={user_data['password']}"
-
             user_path = f"{username_part}|{password_part}"
 
+            streams_to_return = {"streams": copy.deepcopy(regular_streams)}
             await url_processor.process_stream_urls(
-                proxy_streams_copy["streams"], user_path, True, meta_id=meta_id
-            )
-            await url_processor.process_stream_urls(
-                direct_streams["streams"], user_path, False, meta_id=meta_id
+                streams_to_return["streams"], user_path, proxy_streams, meta_id=meta_id
             )
 
-            await cache.set(proxy_key, proxy_streams_copy, ttl=CACHE_TTL)
-            await cache.set(direct_key, direct_streams, ttl=CACHE_TTL)
+            await cache.set(cache_key, streams_to_return, ttl=CACHE_TTL)
+            
+            opposite_streams = {"streams": copy.deepcopy(regular_streams)}
+            await url_processor.process_stream_urls(
+                opposite_streams["streams"], user_path, not proxy_streams, meta_id=meta_id
+            )
+            opposite_key = direct_key if proxy_streams else proxy_key
+            await cache.set(opposite_key, opposite_streams, ttl=CACHE_TTL)
+            
+            all_streams = streams_to_return["streams"]
 
-            return proxy_streams_copy if proxy_streams else direct_streams
+        # Filter streams based on enabled services
+        if enabled_services:
+            filtered_streams = [
+                s for s in all_streams 
+                if s.get("service") in enabled_services
+            ]
+        else:
+            # If no services specified, return all streams
+            filtered_streams = all_streams
 
-        return streams
+        return {"streams": filtered_streams}
     except Exception as e:
         logger.error(f"Error in stream endpoint: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -417,13 +484,24 @@ def process_stream_formatting(streams: list) -> None:
 
 
 @router.get("/{user_path}/manifest.json")
-@cached_decorator(ttl=60)
 async def user_manifest(user_path: str):
     username, proxy_streams = await verify_user(user_path)
     logger.info(f"Manifest request from user: {username}")
 
-    enabled_services = [service.name for service in streaming_services]
-    enabled_services_str = ", ".join(enabled_services)
+    global_services = [service.name for service in streaming_services]
+    global_services_str = ", ".join(global_services)
+
+    users = load_users()
+    user_data = users[username]
+    enabled_services = user_data.get("enabled_services", [])
+
+    if enabled_services:
+        enabled_services_str = ", ".join(enabled_services)
+        disabled_services = [s for s in global_services if s not in enabled_services]
+        disabled_services_str = ", ".join(disabled_services) if disabled_services else "None"
+    else:
+        enabled_services_str = ", ".join(global_services)
+        disabled_services_str = "None"
 
     manifest_data = {
         "id": "win.stkc.aio",
@@ -431,8 +509,11 @@ async def user_manifest(user_path: str):
         "name": "AIO",
         "description": f"""Logged in as {username} {"(🔐 Proxy Enabled)" if proxy_streams else "(🔓 Proxy Disabled)"}
 
-Combine results from {len(enabled_services)} addons:
+Enabled Addons:
 {enabled_services_str}
+
+Disabled Addons:
+{disabled_services_str}
 
 https://stkc.win/""",
         "catalogs": [],

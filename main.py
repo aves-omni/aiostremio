@@ -51,10 +51,12 @@ streaming_services = [
     if service is not None
 ]
 
+logger.info(f"Initialized streaming services: {', '.join([service.name for service in streaming_services])}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info(f"Cache status - Size: {(await get_cache_info())['total_size_mb']}MB")
+    logger.info(f"Cache Info\nSize: {(await get_cache_info())['total_size_mb']}MB")
     cleanup_task = asyncio.create_task(periodic_cleanup())
     yield
     cleanup_task.cancel()
@@ -170,12 +172,19 @@ async def sanity_check():
     logger.info(f"Addons | Checking addons...")
 
     for url in addon_urls:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            if response.status_code not in [200, 302, 307]:
-                logger.warning(f"Addons | ⚠️ {url}")
-            else:
-                logger.info(f"Addons | ✅ {url}")
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url)
+                if response.status_code not in [200, 302, 307]:
+                    logger.warning(f"Addons | ⚠️ {url} (Status: {response.status_code})")
+                else:
+                    logger.info(f"Addons | ✅ {url}")
+        except (httpx.ReadTimeout, httpx.ConnectTimeout):
+            logger.warning(f"Addons | ⚠️ {url} (Timeout)")
+            continue
+        except Exception as e:
+            logger.warning(f"Addons | ⚠️ {url} ({str(e)})")
+            continue
 
     logger.info(f"Config | Checking config...")
 

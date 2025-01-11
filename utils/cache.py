@@ -8,6 +8,7 @@ from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 
 from utils.logger import logger
+from utils.config import config
 
 
 def default_key_builder(func, *args, **kwargs):
@@ -41,7 +42,7 @@ cache = Cache.REDIS(
 
 
 def cached_decorator(
-    ttl=60, key_builder=default_key_builder, key_prefix=None, namespace=None
+    ttl=config.cache_ttl_seconds, key_builder=default_key_builder, key_prefix=None, namespace=None
 ):
     def wrapper(func):
         cache_namespace = namespace or func.__name__
