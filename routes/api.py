@@ -674,7 +674,7 @@ async def user_manifest(user_path: str):
 Options:
 {"🔐 Proxy Enabled" if proxy_streams else "🔓 Proxy Disabled"} {"(MediaFlow)" if mediaflow_enabled else "(Internal)"}
 {"📝 Simple Formatting On" if simple_format else "📝 Simple Formatting Off"}
-{"💾 Cached Content Only" if user_data.get('cached_only', False) else "💾 Uncached Content Available"}
+{"💾 Cached Content Only" if user_data.get('cached_only', False) else "💾 All Content Available"}
 
 Enabled Addons:
 {enabled_services_str}
