@@ -2,84 +2,431 @@
 <html>
 <head>
     <title>User Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #ffffff;
+                --input-bg: #333;
+                --border-color: #444;
+                --stats-bg: #242424;
+                --button-bg: #2563eb;
+                --button-hover: #1d4ed8;
+                --delete-button: #dc2626;
+                --delete-button-hover: #b91c1c;
+                --dropdown-bg: #242424;
+                --success-button: #059669;
+                --success-button-hover: #047857;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-color: #ffffff;
+                --text-color: #1a1a1a;
+                --input-bg: #ffffff;
+                --border-color: #e5e7eb;
+                --stats-bg: #f8f9fa;
+                --button-bg: #2563eb;
+                --button-hover: #1d4ed8;
+                --delete-button: #dc2626;
+                --delete-button-hover: #b91c1c;
+                --dropdown-bg: #ffffff;
+                --success-button: #059669;
+                --success-button-hover: #047857;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
         }
+
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
         }
+
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
         }
-        input {
-            padding: 8px;
+
+        input, select {
+            padding: 0.75rem;
             width: 100%;
-            max-width: 300px;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
             cursor: pointer;
         }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
+            font-weight: normal;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--button-bg);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+
         button:hover {
-            background-color: #0056b3;
+            background-color: var(--button-hover);
         }
-        .user-list {
-            margin-top: 30px;
+
+        button:active {
+            transform: translateY(1px);
         }
+
         .stats {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background-color: var(--stats-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
         }
-        .active-users {
-            color: #28a745;
-            font-weight: bold;
+
+        .user-list {
+            margin-top: 3rem;
         }
+
+        .user-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .user-list li {
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            background: var(--stats-bg);
+        }
+
+        .recent-history {
+            margin-top: 1rem;
+            padding: 0;
+            background: var(--bg-color);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            display: none;
+            width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .recent-history.show {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 1rem;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: auto;
+            background: var(--bg-color);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .history-toggle {
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            flex: 1 1 0;
+            min-width: 150px;
+            margin: 0;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .history-toggle:hover {
+            background-color: var(--button-hover);
+        }
+
+        .history-toggle:active {
+            transform: translateY(1px);
+        }
+
+        .history-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-item:hover {
+            background-color: var(--stats-bg);
+        }
+
+        .history-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .history-title {
+            font-weight: 500;
+            color: var(--text-color);
+            flex: 1;
+        }
+
+        .history-episode {
+            background: var(--button-bg);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .history-time {
+            color: var(--text-color);
+            opacity: 0.6;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .username {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            display: block;
+        }
+
+        .user-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .user-actions > button,
+        .user-actions > .services-dropdown > button {
+            flex: 1 1 0;
+            min-width: 120px;
+            height: 42px;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* History and addon buttons */
+        .user-actions > [id^="history-btn-"],
+        .user-actions > .services-dropdown {
+            flex-basis: calc(50% - 0.25rem);
+            order: 2;
+            margin-top: 0.5rem;
+        }
+
+        /* Main action buttons */
+        .user-actions > button:not([id^="history-btn-"]):not(:last-child) {
+            order: 1;
+        }
+
+        .user-actions > button:last-child {
+            order: 1;
+        }
+
         .services-dropdown {
             position: relative;
             display: inline-block;
-            margin: 10px 0;
+            margin: 0;
+            flex: 1 1 0;
         }
+
+        .services-dropdown button {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .user-list li {
+                display: block;
+            }
+
+            .user-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .user-actions > button,
+            .user-actions > .services-dropdown {
+                flex: 1 1 auto;
+                min-width: 100%;
+                order: unset;
+                margin-top: 0;
+                flex-basis: auto;
+                height: 42px;
+            }
+
+            .user-actions > button {
+                min-height: 42px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .username {
+                text-align: center;
+                margin-bottom: 1.25rem;
+            }
+        }
+
         .services-content {
             display: none;
             position: absolute;
-            background-color: #f9f9f9;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            padding: 12px;
+            background-color: var(--dropdown-bg);
+            min-width: 200px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+            padding: 1rem;
             z-index: 1;
+            border: 1px solid var(--border-color);
+            right: 0;
         }
+
         .services-content.show {
             display: block;
         }
+
         .services-content label {
             display: flex;
             align-items: center;
-            margin: 5px 0;
+            margin: 0.5rem 0;
             cursor: pointer;
         }
+
         .services-content input[type="checkbox"] {
             width: auto;
-            margin-right: 8px;
+            margin-right: 0.5rem;
+        }
+
+        button[style*="background-color: #dc3545"] {
+            background-color: var(--delete-button) !important;
+        }
+
+        button[style*="background-color: #dc3545"]:hover {
+            background-color: var(--delete-button-hover) !important;
+        }
+
+        button[style*="background-color: #28a745"] {
+            background-color: var(--success-button) !important;
+        }
+
+        button[style*="background-color: #28a745"]:hover {
+            background-color: var(--success-button-hover) !important;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            .services-content {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 300px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
         }
     </style>
 </head>
 <body>
     <h1>User Management</h1>
-    
-    <div class="stats">
-        <h3>Active Users: <span id="activeCount" class="active-users">0</span></h3>
-        <div id="activeUsers"></div>
-    </div>
     
     <form id="userForm">
         <div class="form-group">
@@ -91,11 +438,27 @@
             <input type="password" id="password" name="password" required>
         </div>
         <div class="form-group">
-            <label for="proxy_streams">Proxy Streams:</label>
-            <select id="proxy_streams" name="proxy_streams">
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-            </select>
+            <label>Settings:</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="proxy_streams" name="proxy_streams" checked>
+                <label for="proxy_streams">Enable Proxy Streams</label>
+                <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Encrypts URLs and proxies the stream to hide API keys and bypass IP restrictions</small>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="vidi_mode" name="vidi_mode">
+                <label for="vidi_mode">Enable Vidi Mode</label>
+                <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Shows the addon name in the description</small>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="simple_format" name="simple_format">
+                <label for="simple_format">Enable Simple Format</label>
+                <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Hides confusing torrent filenames and shows a easy to understand description</small>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="one_per_quality" name="one_per_quality">
+                <label for="one_per_quality">Best Per Resolution</label>
+                <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Shows the best available stream for each resolution and hides the rest</small>
+            </div>
         </div>
         <button type="submit">Add User</button>
     </form>
@@ -105,31 +468,66 @@
         <ul>
             {% for username, details in users.items() %}
             <li data-username="{{ username }}">
-                <span class="username">{{ username }}</span>
-                - Proxy: <span id="proxy-{{ username }}">{{ 'On' if details.proxy_streams else 'Off' }}</span>
-                <button onclick="toggleProxy('{{ username }}')">Toggle Proxy</button>
-                <button onclick="deleteUser('{{ username }}')" style="background-color: #dc3545;">Delete</button>
-                <div class="services-dropdown">
-                    <button type="button" onclick="toggleServices('{{ username }}')" style="background-color: #28a745;">Toggle Addons</button>
-                    <div id="services-{{ username }}" class="services-content">
-                        <form id="services-form-{{ username }}" onsubmit="return false;">
-                            <div id="services-checkboxes-{{ username }}">
-                                <!-- Services will be populated by JavaScript -->
-                                <p>Loading services...</p>
-                            </div>
-                            <button type="submit" style="margin-top: 10px;">Save Services</button>
-                        </form>
+                <span class="username">{{ username }}{% if user_last_active[username] != "never" %} (Active {{ user_last_active[username] }}){% endif %}</span>
+                <div class="user-actions">
+                    {% if user_histories[username] %}
+                    <button onclick="toggleHistory('{{ username }}')" id="history-btn-{{ username }}">
+                        Show History
+                    </button>
+                    {% endif %}
+                    <button onclick="toggleProxy('{{ username }}')" id="proxy-btn-{{ username }}">
+                        Proxy: {{ 'On' if details.proxy_streams else 'Off' }}
+                    </button>
+                    <button onclick="toggleVidiMode('{{ username }}')" id="vidi-btn-{{ username }}">
+                        Vidi Mode: {{ 'On' if details.vidi_mode else 'Off' }}
+                    </button>
+                    <button onclick="toggleSimpleFormat('{{ username }}')" id="simple-btn-{{ username }}">
+                        Simple Format: {{ 'On' if details.simple_format else 'Off' }}
+                    </button>
+                    <button onclick="toggleOnePerQuality('{{ username }}')" id="quality-btn-{{ username }}">
+                        Best Per Resolution: {{ 'On' if details.one_per_quality else 'Off' }}
+                    </button>
+                    <button onclick="deleteUser('{{ username }}')" style="background-color: #dc3545;">Delete User</button>
+                    <div class="services-dropdown">
+                        <button type="button" onclick="toggleServices('{{ username }}')" style="background-color: #28a745;">Toggle Addons</button>
+                        <div id="services-{{ username }}" class="services-content">
+                            <form id="services-form-{{ username }}" onsubmit="return false;">
+                                <div id="services-checkboxes-{{ username }}">
+                                    <!-- Services will be populated by JavaScript -->
+                                    <p>Loading services...</p>
+                                </div>
+                                <button type="submit" style="margin-top: 10px;">Save Services</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
+                {% if user_histories[username] %}
+                <div class="recent-history" id="history-{{ username }}">
+                    <ul class="history-list">
+                    {% for entry in user_histories[username][:25] %}
+                        <li class="history-item">
+                            <div class="history-title-row">
+                                <span class="history-title">
+                                    {{ entry.get('title', 'Unknown Title') }}
+                                    {% if entry.get('type') == 'series' and entry.get('season') and entry.get('episode') %}
+                                        <span class="history-episode">S{{ entry.get('season') }}E{{ entry.get('episode') }}</span>
+                                    {% elif entry.get('type') == 'movie' %}
+                                        <span class="history-episode">MOVIE</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <span class="history-time">{{ entry.get('timestamp', 'Unknown') }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
     </div>
 
     <script>
-        let pollingInterval;
-        const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
-        let lastActivityTime = Date.now();
         let availableServices = [];
 
         // Fetch available services when page loads
@@ -271,51 +669,6 @@
 
         fetchAvailableServices();
 
-        function startPolling() {
-            if (pollingInterval) return;
-            updateActiveUsers();
-            pollingInterval = setInterval(updateActiveUsers, 15000);
-            lastActivityTime = Date.now();
-        }
-
-        function stopPolling() {
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-        }
-
-        async function updateActiveUsers() {
-            if (Date.now() - lastActivityTime > POLLING_TIMEOUT) {
-                stopPolling();
-                return;
-            }
-
-            try {
-                const response = await fetch('/active_users');
-                const data = await response.json();
-                
-                document.getElementById('activeCount').textContent = data.count;
-                document.getElementById('activeUsers').innerHTML = data.users.length > 0 
-                    ? `<p>Currently streaming: ${data.users.join(', ')}</p>`
-                    : '<p>No active streams</p>';
-            } catch (error) {
-                console.error('Error fetching active users:', error);
-            }
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopPolling();
-            } else {
-                startPolling();
-            }
-        });
-
-        if (!document.hidden) {
-            startPolling();
-        }
-
         document.getElementById('userForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -342,13 +695,56 @@
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
-                    const proxyStatusElement = document.getElementById(`proxy-${username}`);
-                    proxyStatusElement.textContent = result.proxy_streams ? 'On' : 'Off';
-                } else {
-                    alert(result.message);
+                    const proxyButton = document.getElementById(`proxy-btn-${username}`);
+                    proxyButton.textContent = `Proxy: ${result.proxy_streams ? 'On' : 'Off'}`;
                 }
             } catch (error) {
-                alert('Error toggling proxy');
+                console.error(`Error toggling proxy for ${username}:`, error);
+            }
+        }
+
+        async function toggleVidiMode(username) {
+            try {
+                const response = await fetch(`/admin/toggle_vidi_mode/${username}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const vidiButton = document.getElementById(`vidi-btn-${username}`);
+                    vidiButton.textContent = `Vidi Mode: ${result.vidi_mode ? 'On' : 'Off'}`;
+                }
+            } catch (error) {
+                console.error(`Error toggling Vidi mode for ${username}:`, error);
+            }
+        }
+
+        async function toggleSimpleFormat(username) {
+            try {
+                const response = await fetch(`/admin/toggle_simple_format/${username}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const simpleButton = document.getElementById(`simple-btn-${username}`);
+                    simpleButton.textContent = `Simple Format: ${result.simple_format ? 'On' : 'Off'}`;
+                }
+            } catch (error) {
+                console.error(`Error toggling simple format for ${username}:`, error);
+            }
+        }
+
+        async function toggleOnePerQuality(username) {
+            try {
+                const response = await fetch(`/admin/toggle_one_per_quality/${username}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const qualityButton = document.getElementById(`quality-btn-${username}`);
+                    qualityButton.textContent = `Best Per Resolution: ${result.one_per_quality ? 'On' : 'Off'}`;
+                }
+            } catch (error) {
+                console.error(`Error toggling one per quality for ${username}:`, error);
             }
         }
 
@@ -356,19 +752,32 @@
             if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
                 return;
             }
-
             try {
                 const response = await fetch(`/admin/delete_user/${username}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
                 if (result.status === 'success') {
+                    alert('User deleted successfully');
                     location.reload();
                 } else {
-                    alert(result.message);
+                    throw new Error(result.message || 'Failed to delete user');
                 }
             } catch (error) {
-                alert('Error deleting user');
+                console.error(`Error deleting user ${username}:`, error);
+                alert(`Error deleting user: ${error.message}`);
+            }
+        }
+
+        function toggleHistory(username) {
+            const historyDiv = document.getElementById(`history-${username}`);
+            const toggleButton = document.getElementById(`history-btn-${username}`);
+            if (historyDiv.classList.contains('show')) {
+                historyDiv.classList.remove('show');
+                toggleButton.textContent = 'Show History';
+            } else {
+                historyDiv.classList.add('show');
+                toggleButton.textContent = 'Hide History';
             }
         }
     </script>

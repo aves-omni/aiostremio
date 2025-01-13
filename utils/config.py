@@ -23,6 +23,50 @@ class Config:
         except Exception as e:
             raise RuntimeError(f"Failed to load config.json: {str(e)}")
 
+    def get(self, *keys: str) -> Any:
+        """Get a nested config value using a sequence of keys."""
+        value = self._config
+        for key in keys:
+            if not isinstance(value, dict):
+                return None
+            value = value.get(key)
+            if value is None:
+                return None
+        return value
+
+    def get_user_vidi_mode(self, username: str) -> bool:
+        users_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "db/users.json"
+        )
+        try:
+            with open(users_path, "r") as f:
+                users = json.load(f)
+                return users.get(username, {}).get("vidi_mode", False)
+        except Exception:
+            return False
+
+    def get_user_simple_format(self, username: str) -> bool:
+        users_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "db/users.json"
+        )
+        try:
+            with open(users_path, "r") as f:
+                users = json.load(f)
+                return users.get(username, {}).get("simple_format", False)
+        except Exception:
+            return False
+
+    def get_user_one_per_quality(self, username: str) -> bool:
+        users_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "db/users.json"
+        )
+        try:
+            with open(users_path, "r") as f:
+                users = json.load(f)
+                return users.get(username, {}).get("one_per_quality", False)
+        except Exception:
+            return False
+
     @property
     def debrid_service(self) -> str:
         return self._config.get("debrid_service")
@@ -64,10 +108,6 @@ class Config:
     @property
     def chunk_size_mb(self) -> int:
         return self._config.get("chunk_size_mb", 4)
-
-    @property
-    def vidi_mode(self) -> bool:
-        return self._config.get("vidi_mode", False)
 
 
 config = Config()

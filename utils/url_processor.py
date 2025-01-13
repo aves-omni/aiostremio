@@ -1,6 +1,6 @@
 import base64
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from urllib.parse import urlencode
 import asyncio
 
@@ -12,6 +12,7 @@ from utils.cache import cached_decorator
 from utils.config import config
 from utils.logger import logger
 from utils.season_cache import cache_season
+from services.base import StreamingService
 
 
 class URLProcessor:
@@ -19,6 +20,10 @@ class URLProcessor:
         self.fernet = Fernet(encryption_key)
         self.addon_url = config.addon_url
         self.mediaflow_api_key = os.getenv("MEDIAFLOW_API_KEY")
+        self.services = []
+
+    def set_services(self, services: List[StreamingService]):
+        self.services = services
 
     async def _generate_mediaflow_url(self, url: str) -> str:
         """Generate an encrypted MediaFlow URL."""
@@ -32,7 +37,7 @@ class URLProcessor:
                 "origin": config.addon_url,
             },
             "response_headers": {},
-            "expiration": 2592000,
+            "expiration": 21600,
             "api_password": self.mediaflow_api_key,
         }
 
@@ -55,7 +60,7 @@ class URLProcessor:
         # Start season caching if this is a series episode
         if meta_id and ":" in meta_id and meta_id.count(":") == 2:
             logger.info(f"Triggering background caching for season of {meta_id}")
-            asyncio.create_task(cache_season(meta_id))
+            asyncio.create_task(cache_season(meta_id, self.services))
 
         for stream in streams:
             if "url" in stream and proxy_enabled:
@@ -78,7 +83,7 @@ class URLProcessor:
                     proxy_url = (
                         f"{self.addon_url}/{user_path}/proxy/{safe_encrypted_url}"
                     )
-                    logger.info(f"Generated proxy URL: {proxy_url}")
+                    logger.debug(f"Generated proxy URL: {proxy_url}")
                     stream["url"] = proxy_url
 
     def decrypt_url(self, encrypted_url: str) -> str:

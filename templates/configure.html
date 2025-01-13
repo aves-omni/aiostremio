@@ -1,77 +1,209 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Configure Debrid Proxy</title>
+    <title>AIOStremio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #ffffff;
+                --input-bg: #333;
+                --border-color: #444;
+                --stats-bg: #242424;
+                --button-bg: #2563eb;
+                --button-hover: #1d4ed8;
+                --notice-bg: #854d0f;
+                --notice-border: #a16207;
+                --notice-text: #fef3c7;
+                --result-bg: #242424;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-color: #ffffff;
+                --text-color: #1a1a1a;
+                --input-bg: #ffffff;
+                --border-color: #e5e7eb;
+                --stats-bg: #f8f9fa;
+                --button-bg: #2563eb;
+                --button-hover: #1d4ed8;
+                --notice-bg: #fef3c7;
+                --notice-border: #fcd34d;
+                --notice-text: #854d0f;
+                --result-bg: #f8f9fa;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .form-group {
-            margin-bottom: 15px;
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input {
-            padding: 8px;
-            width: 100%;
-            max-width: 300px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
+
+        .admin-button {
+            padding: 0.5rem 1rem;
+            background-color: var(--button-bg);
             color: white;
             border: none;
+            border-radius: 0.5rem;
             cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background-color 0.3s, transform 0.1s;
+            white-space: nowrap;
+            margin-left: 1rem;
         }
+
+        .admin-button:hover {
+            background-color: var(--button-hover);
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input {
+            padding: 0.75rem;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--button-bg);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
         button:hover {
-            background-color: #0056b3;
+            background-color: var(--button-hover);
         }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
         .result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: var(--result-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
             display: none;
         }
+
         .result pre {
             word-wrap: break-word;
             white-space: pre-wrap;
+            padding: 1rem;
+            background: var(--bg-color);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
         }
+
         .stats {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background-color: var(--stats-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
         }
-        .active-users {
-            color: #28a745;
-            font-weight: bold;
-        }
+
         .notice {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #ffeb3b;
-            border: 1px solid #fbc02d;
-            color: #333;
-            font-weight: bold;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background-color: var(--notice-bg);
+            border: 1px solid var(--notice-border);
+            color: var(--notice-text);
+            font-weight: 500;
             text-align: center;
+            border-radius: 0.75rem;
+        }
+
+        .notice a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        .notice a:hover {
+            text-decoration: none;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .notice, .stats, .result {
+                margin: 1.5rem 0;
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Configure Debrid Proxy</h1>
+    <div class="header">
+        <h1>AIOStremio</h1>
+        <a href="/admin" class="admin-button">Admin Panel</a>
+    </div>
     
     <div class="notice">
         <p>Invite-only page. Ask for access or buy TorBox <a href="https://torbox.app/subscription?referral=fe897519-fa8d-402d-bdb6-15570c60eff2">here</a>.</p>
-    </div>
-
-    <div class="stats">
-        <h3>Active Users: <span id="activeCount" class="active-users">0</span></h3>
     </div>
 
     <form id="configForm">
@@ -89,55 +221,13 @@
     <div id="result" class="result">
         <h3>Your Configuration URL:</h3>
         <pre id="configUrl"></pre>
+        <button id="openStremioBtn" onclick="openInStremio()" style="margin-top: 1rem;">Install</button>
     </div>
 
     <script>
-        let pollingInterval;
-        const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
-        let lastActivityTime = Date.now();
-
-        function startPolling() {
-            if (pollingInterval) return;
-            updateActiveUsers();
-            pollingInterval = setInterval(updateActiveUsers, 15000);
-            lastActivityTime = Date.now();
-        }
-
-        function stopPolling() {
-            if (pollingInterval) {
-                clearInterval(pollingInterval);
-                pollingInterval = null;
-            }
-        }
-
-        async function updateActiveUsers() {
-            // Check if we've exceeded the timeout
-            if (Date.now() - lastActivityTime > POLLING_TIMEOUT) {
-                stopPolling();
-                return;
-            }
-
-            try {
-                const response = await fetch('/active_users');
-                const data = await response.json();
-                document.getElementById('activeCount').textContent = data.count;
-            } catch (error) {
-                console.error('Error fetching active users:', error);
-            }
-        }
-
-        // Start/stop polling based on visibility
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopPolling();
-            } else {
-                startPolling();
-            }
-        });
-
-        // Initial start
-        if (!document.hidden) {
-            startPolling();
+        function openInStremio() {
+            const configUrl = document.getElementById('configUrl').textContent;
+            window.location.href = 'stremio://' + configUrl;
         }
 
         document.getElementById('configForm').addEventListener('submit', async (e) => {

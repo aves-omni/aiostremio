@@ -25,7 +25,7 @@ class StreamManager:
         }
 
     async def create_streaming_response(
-        self, url: str, request_headers: Dict, active_user_callback=None
+        self, url: str, request_headers: Dict
     ) -> StreamingResponse:
         headers = self.default_headers.copy()
         if "range" in request_headers:
@@ -34,24 +34,28 @@ class StreamManager:
         timeout = aiohttp.ClientTimeout(total=180)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url, headers=headers) as response:
+                content_range = response.headers.get("Content-Range", "")
+                content_length = response.headers.get("Content-Length", "")
+                
                 response_headers = {
                     "Accept-Ranges": "bytes",
-                    "Content-Range": response.headers.get("Content-Range"),
-                    "Content-Length": response.headers.get("Content-Length"),
+                    "Content-Range": content_range if content_range else None,
+                    "Content-Length": content_length if content_length else None,
                     "Connection": "keep-alive",
                     "Cache-Control": "no-cache",
                 }
+                response_headers = {k: v for k, v in response_headers.items() if v is not None}
                 media_type = response.headers.get("Content-Type", "video/mp4")
 
         return StreamingResponse(
-            self._stream_content(url, headers, active_user_callback),
+            self._stream_content(url, headers),
             media_type=media_type,
             status_code=206 if "range" in request_headers else 200,
             headers=response_headers,
         )
 
     async def _stream_content(
-        self, url: str, headers: Dict, active_user_callback=None
+        self, url: str, headers: Dict
     ) -> AsyncGenerator[bytes, None]:
         timeout = aiohttp.ClientTimeout(total=None, connect=120, sock_read=120)
         buffer = deque()
@@ -94,9 +98,6 @@ class StreamManager:
                         await asyncio.sleep(0.1)
 
                     while True:
-                        if active_user_callback:
-                            active_user_callback()
-
                         if not buffer and current_buffer_size == 0:
                             break
 

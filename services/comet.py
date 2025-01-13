@@ -13,7 +13,7 @@ from .base import StreamingService
 
 class CometService(StreamingService):
     def __init__(self):
-        self.base_url = "https://comet.elfhosted.com"
+        self.base_url = config.get("addon_config", "comet", "base_url")
         self.debrid_api_key = config.get_addon_debrid_api_key("comet")
         self.debrid_service = config.get_addon_debrid_service("comet")
         self.options = f"""{{

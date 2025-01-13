@@ -5,19 +5,14 @@ import asyncio
 import aiohttp
 from utils.logger import logger
 from utils.config import config
+from utils.service_manager import ServiceManager
+from services.base import StreamingService
+from typing import List
+from utils.cache import cache
 
 _caching_seasons = set()
 
-async def _fetch_streams(meta_id: str, username: str, password: str, proxy_streams: bool) -> bool:
-    api_url = f"{config.addon_url}/user={username}|password={password}/stream/{meta_id}"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as response:
-            if response.status == 200:
-                response_data = await response.json()
-                return bool(response_data.get("streams", []))
-    return False
-
-async def cache_season(meta_id: str):
+async def cache_season(meta_id: str, services: List[StreamingService]):
     try:
         # Extract series ID and season from meta_id (tt1234567:1:2 for S1E2)
         parts = meta_id.split(":")
@@ -49,17 +44,10 @@ async def cache_season(meta_id: str):
                                 
                                 logger.info(f"Found {len(season_episodes)} episodes in season {season} for {name}")
 
-                                users_file = "db/users.json"
-                                if os.path.exists(users_file):
-                                    with open(users_file, "r") as f:
-                                        users = json.load(f)
-
-                                    cache_user = None
-                                    if users:
-                                        username, data = next(iter(users.items()))
-                                        cache_user = (username, data["password"])
-                                
                                 start_time = time.time()
+                                
+                                # Create service manager instance
+                                service_manager = ServiceManager(services)
                                 
                                 for episode in season_episodes:
                                     ep_num = episode.get("episode", 0)
@@ -71,15 +59,19 @@ async def cache_season(meta_id: str):
                                     
                                     logger.info(f"Caching episode {ep_name} of {name}")
                                     
-                                    tasks = []
+                                    # Fetch streams using ServiceManager
+                                    try:
+                                        streams = await service_manager.fetch_all_streams(ep_meta_id)
+                                        if streams:
+                                            # Store streams in Redis cache
+                                            cache_key = f"raw_streams:{ep_meta_id}"
+                                            await cache.set(cache_key, {"streams": streams}, ttl=config.cache_ttl_seconds)
+                                            logger.info(f"Successfully cached streams for {ep_name}")
+                                        else:
+                                            logger.warning(f"No streams found for {ep_name}")
+                                    except Exception as e:
+                                        logger.error(f"Error fetching streams for {ep_name}: {str(e)}")
                                     
-                                    if cache_user:
-                                        tasks.append(_fetch_streams(ep_meta_id, cache_user[0], cache_user[1], False))  # Direct
-                                        tasks.append(_fetch_streams(ep_meta_id, cache_user[0], cache_user[1], True))   # Proxied
-                                    
-                                    if tasks:
-                                        await asyncio.gather(*tasks)
-                                        
                                     # Wait before next episode to avoid rate limits
                                     await asyncio.sleep(60)
                                 

@@ -23,6 +23,7 @@ from services.mediafusion import MediaFusionService
 from services.torbox import TorboxService
 from services.torrentio import TorrentioService
 from services.debridio import DebridioService
+from services.peerflix import PeerflixService
 from services.watchhub import WatchHubService
 from utils.cache import get_cache_info
 from utils.config import config
@@ -47,6 +48,7 @@ streaming_services = [
             else None
         ),
         DebridioService() if config.get_addon_debrid_api_key("debridio") != os.getenv("DEBRID_API_KEY") and config.get_addon_debrid_service("debridio") != config.debrid_service else None,
+        PeerflixService() if config.debrid_service is not None else None,
     ]
     if service is not None
 ]
@@ -57,22 +59,7 @@ logger.info(f"Initialized streaming services: {', '.join([service.name for servi
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Cache Info\nSize: {(await get_cache_info())['total_size_mb']}MB")
-    cleanup_task = asyncio.create_task(periodic_cleanup())
     yield
-    cleanup_task.cancel()
-    await cleanup_task
-
-
-async def periodic_cleanup():
-    while True:
-        await asyncio.sleep(30)
-        current_time = time.time()
-        for username, timestamp in list(active_user_timestamps.items()):
-            if current_time - timestamp >= ACTIVE_TIMEOUT and username in active_users:
-                active_user_timestamps.pop(username)
-                active_users.pop(username)
-                logger.debug(f"Cleaned up inactive user: {username}")
-
 
 app = FastAPI(lifespan=lifespan)
 
@@ -88,10 +75,6 @@ USERS_FILE = "db/users.json"
 RATE_LIMIT_MINUTES = 1
 MAX_REQUESTS = 30
 CACHE_TTL = config.cache_ttl_seconds
-
-active_users = defaultdict(int)
-active_user_timestamps = defaultdict(float)
-ACTIVE_TIMEOUT = 30
 
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 if not ENCRYPTION_KEY:
