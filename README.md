@@ -4,7 +4,7 @@
 
 ![Stremio](https://img.shields.io/badge/Stremio-mediumpurple?link=https%3A%2F%2Fstremio.com%2F) ![Vidi](https://img.shields.io/badge/Vidi-black?link=https%3A%2F%2Fvidi.plomo.se%2F) ![Madari](https://img.shields.io/badge/Madari-red?link=https%3A%2F%2Fdownloads.madari.media%2F)
 
-AIOStremio combines your favorite Stremio addons into one. Easily sync your setup with friends—changes update for all users without any reconfiguration on their end.
+AIOStremio combines your favorite Stremio addons into one. Easily sync your setup with friends—changes update for all users without any reconfiguration on their end. [Discord Server](https://discord.gg/MkCvXWjeAx)
 
 (Note: Not all services allow account sharing, and it may lead to a ban. Consider using [TorBox](https://torbox.app/subscription?referral=fe897519-fa8d-402d-bdb6-15570c60eff2) (referral link), which allows account sharing.)
 
