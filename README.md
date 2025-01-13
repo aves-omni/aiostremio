@@ -1,6 +1,10 @@
 # AIOStremio
 
-AIOStremio combines your favorite Stremio addons into one. Easily sync your setup with friends—changes update for all users without any reconfiguration on their end. [Discord Server](https://discord.gg/dU7KcppT6M)
+![commit activity](https://img.shields.io/github/commit-activity/m/stekc/aiostremio) ![last commit](https://img.shields.io/github/last-commit/stekc/aiostremio) ![chat](https://img.shields.io/discord/1178091792504201357?logo=discord&logoColor=white)
+
+![Stremio](https://img.shields.io/badge/Stremio-mediumpurple?link=https%3A%2F%2Fstremio.com%2F) ![Vidi](https://img.shields.io/badge/Vidi-black?link=https%3A%2F%2Fvidi.plomo.se%2F) ![Madari](https://img.shields.io/badge/Madari-red?link=https%3A%2F%2Fdownloads.madari.media%2F)
+
+AIOStremio combines your favorite Stremio addons into one. Easily sync your setup with friends—changes update for all users without any reconfiguration on their end.
 
 (Note: Not all services allow account sharing, and it may lead to a ban. Consider using [TorBox](https://torbox.app/subscription?referral=fe897519-fa8d-402d-bdb6-15570c60eff2) (referral link), which allows account sharing.)
 
