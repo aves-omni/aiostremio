@@ -4,15 +4,31 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 
 (Note: Not all services allow account sharing, and it may lead to a ban. Consider using [TorBox](https://torbox.app/subscription?referral=fe897519-fa8d-402d-bdb6-15570c60eff2) (referral link), which allows account sharing.)
 
-![Stremio on Android TV](https://i.postimg.cc/YthHbCzs/PNG-image.png)
+![Stremio, Android TV, custom formatting applied](https://i.ibb.co/fxgjs5D/simple-on-bestpres-on.png)
+<small>*Stremio, on Android TV, with custom formatting applied*</small>
+
+<details>
+<summary>More Images</summary>
+
+| Home | Admin Panel |
+| ---------- | ---------- |
+| ![Homepage](https://i.ibb.co/myfQyW1/Screen-Shot-2025-01-12-at-21-36-13.png) | ![Admin Panel](https://i.ibb.co/FxtVY6b/Screen-Shot-2025-01-12-at-21-36-00.png) |
+
+| Vidi<br>Custom Formatting | Vidi<br>Default Formatting |
+| ----------------------- | -------------- |
+| ![Vidi](https://i.ibb.co/z519LTP/IMG-3817.jpg) | ![Vidi](https://i.ibb.co/vZKGRLc/IMG-3818.jpg) |
+
+</details>
+
 
 ## Features
 - Account system
 - Fetch links from multiple addons
 - Redis cache that instantly returns already fetched links
 - Automatically cache all episodes in a season when any episode from that season is requested
-- Manually cache links for a specific title using `python3 build_cache.py [--series|--movie] [IMDb ID]`
 - Optional encryption of video URLs and proxy streams to bypass IP restrictions on debrid services (at your own risk) and avoid exposing your API keys/passwords
+- Optional cleansing of confusing file names, show only relevant metadata
+- Optional filtering of duplicate streams, show only the best file available per resolution
 - Very easy to add support for new addons
 
 ## Supported Stremio Addons
@@ -23,9 +39,14 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 - [Easynews](https://ea627ddf0ee7-easynews.baby-beamup.club/)
 - [Debridio](https://debridio.adobotec.com/)
 - [WatchHub](https://watchhub.stkc.win/)
+- [Peerflix](https://config.peerflix.mov/)
 
 ## Setup
+<details>
+<summary>Setup Guide</summary>
+
 Requirements:
+
 - Docker
 - Reverse proxy (https://caddyserver.com/docs/quick-starts/reverse-proxy)
 
@@ -37,7 +58,7 @@ Create an admin account that will be used to add new users and toggle proxy stre
 ADMIN_USERNAME=
 ADMIN_PASSWORD=
 ```
-If you are not proxying streams or using MediaFlow, this can be left blank. If using the built-in proxy, run `python3 gen_key.py` and add the key:
+If you are using MediaFlow, or not using the proxy at all, this can be left blank. If using the built-in proxy, run `python3 gen_key.py` and add the key:
 ```
 ENCRYPTION_KEY=
 ```
@@ -83,11 +104,16 @@ If you want to use different debrid services for different addons, specify them 
         "debrid_api_key": ""
     },
     "comet": {
+        "base_url": "https://comet.elfhosted.com",
         "debrid_service": "",
         "debrid_api_key": ""
     },
     "debridio": {
         "debrid_service": "easydebrid",
+        "debrid_api_key": ""
+    },
+    "peerflix": {
+        "debrid_service": "",
         "debrid_api_key": ""
     }
 },
@@ -100,7 +126,7 @@ The domain used when generating links, leave as default unless using another ins
 ```
 "mediaflow_url": "http://debridproxy_mediaflow:8888",
 ```
-The domain returned in the generated links, leave as default unless using another instance:
+The domain returned in the generated links, set this to your domain:
 ```
 "external_mediaflow_url": "https://mediaflow.your-domain.com",
 ```
@@ -117,10 +143,6 @@ Advanced built-in proxy options. Does not affect MediaFlow. Leave this as defaul
 "buffer_size_mb": 256,
 "chunk_size_mb": 4,
 ```
-Vidi does not show titles such as "Torrentio [RD+] 4k", so when set to true, these will be added to the description. Leave this set to false if you're using Stremio:
-```
-"vidi_mode": false
-```
 
 3. Configure your reverse proxy. If you are using Caddy in Docker, this Caddyfile should work:
 ```
@@ -135,11 +157,12 @@ mediaflow.your-domain.com {
 
 4. Run `docker compose up -d` to start the addon.
 
-5. Navigate to aiostremio.your-domain.com/admin to add a user.
+5. Navigate to aiostremio.your-domain.com/admin to add a user
 
-6. Navigate to aiostremio.your-domain.com/ to generate a manifest.
+6. Navigate to aiostremio.your-domain.com/ to generate a manifest
 
-7. Add the generated URL to Stremio/Vidi/etc. and start watching.
+7. Add the generated URL to Stremio/Vidi/etc. and start watching
+</details>
 
 ## Credits
 Torrentio, Comet, MediaFusion, and all other upstream addons - Used for fetching links
