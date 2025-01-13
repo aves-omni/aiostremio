@@ -46,6 +46,12 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 - [WatchHub](https://watchhub.stkc.win/)
 - [Peerflix](https://config.peerflix.mov/)
 
+## Supported Debrid Providers
+All debrid providers supported in the addons listed above
+
+> [!WARNING]
+> If your debrid provider has IP sharing restrictions you must configure the proxy to be ON for ALL users. Services such as TorBox and Premiumize do not have this restriction and you are free to enable the proxy for some users and disable it for others.
+
 ## Setup
 <details>
 <summary>Setup Guide</summary>
