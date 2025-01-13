@@ -5,7 +5,6 @@ python-dotenv
 aiocache[redis]==0.12.3
 jinja2
 python-multipart
-passlib
 bcrypt
 cryptography
 aiohttp

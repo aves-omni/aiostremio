@@ -4,6 +4,7 @@ import httpx
 import os
 import time
 import logging
+import bcrypt
 from collections import defaultdict
 from contextlib import asynccontextmanager
 
@@ -13,7 +14,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from routes.api import router
@@ -53,9 +53,6 @@ streaming_services = [
     if service is not None
 ]
 
-logger.info(f"Initialized streaming services: {', '.join([service.name for service in streaming_services])}")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Cache Info\nSize: {(await get_cache_info())['total_size_mb']}MB")
@@ -85,8 +82,6 @@ if not ENCRYPTION_KEY:
 fernet = Fernet(ENCRYPTION_KEY)
 
 rate_limits = defaultdict(list)
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class User(BaseModel):
@@ -131,13 +126,13 @@ class AdminAuth:
 
         self.admin_credentials = {
             "username": admin_username,
-            "password_hash": pwd_context.hash(admin_password),
+            "password_hash": bcrypt.hashpw(admin_password.encode(), bcrypt.gensalt()),
         }
 
     def verify_admin(self, username: str, password: str) -> bool:
         if username != self.admin_credentials["username"]:
             return False
-        return pwd_context.verify(password, self.admin_credentials["password_hash"])
+        return bcrypt.checkpw(password.encode('utf-8'), self.admin_credentials["password_hash"])
 
 
 admin_auth = AdminAuth()

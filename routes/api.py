@@ -5,12 +5,12 @@ import time
 from collections import defaultdict
 import copy
 from datetime import datetime
+import bcrypt
 
 import aiohttp
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from passlib.context import CryptContext
 
 from utils.cache import cached_decorator, cache
 from utils.config import config
@@ -186,8 +186,7 @@ async def generate_config(request: Request):
         logger.debug(f"Found stored hash for user: {user.username}")
 
         try:
-            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            is_valid = pwd_context.verify(user.password, original_hash)
+            is_valid = bcrypt.checkpw(user.password.encode(), original_hash.encode())
             logger.debug(f"Password verification result: {is_valid}")
         except Exception as e:
             logger.error(f"Password verification error: {str(e)}")
@@ -325,9 +324,8 @@ async def add_user(
     if username in users:
         raise HTTPException(status_code=400, detail="Unable to create user")
 
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    hashed_password = pwd_context.hash(password)
-    safe_hash = base64.urlsafe_b64encode(hashed_password.encode()).decode()
+    hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    safe_hash = base64.urlsafe_b64encode(hashed_password).decode()
     users[username] = {
         "password": safe_hash,
         "proxy_streams": proxy_streams,
