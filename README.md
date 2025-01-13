@@ -50,7 +50,9 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 All debrid providers supported in the addons listed above
 
 > [!WARNING]
-> If your debrid provider has IP sharing restrictions you must configure the proxy to be ON for ALL users. Services such as TorBox and Premiumize do not have this restriction and you are free to enable the proxy for some users and disable it for others.
+> If your debrid provider has IP sharing restrictions, and you will be accessing this addon from multiple IPs, you must configure the proxy to be ON for ALL users. If you will only be accessing this addon from one network it is safe to disable the proxy.
+>
+> Services such as TorBox and Premiumize do not have this restriction and you are free to enable the proxy for some users and disable it for others.
 
 ## Setup
 <details>
