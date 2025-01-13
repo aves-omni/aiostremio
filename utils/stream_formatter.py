@@ -112,9 +112,10 @@ class StreamFormatter:
         streams[:] = best_streams
 
     def _process_stream_formatting(self, streams: List[Dict[str, Any]], username: str = None) -> None:
-        vidi_mode = config.get_user_vidi_mode(username) if username else False
-        simple_mode = config.get_user_simple_format(username) if username else False
+        cached_only = config.get_user_cached_only(username) if username else False
         one_per_quality = config.get_user_one_per_quality(username) if username else False
+        simple_mode = config.get_user_simple_format(username) if username else False
+        vidi_mode = config.get_user_vidi_mode(username) if username else False
 
         if not streams:
             return
@@ -123,6 +124,8 @@ class StreamFormatter:
         filtered_streams = [s for s in streams if s.get("service") != "WatchHub"]
 
         if filtered_streams:
+            if cached_only:
+                filtered_streams = [s for s in filtered_streams if s.get("is_cached", False)]
             if one_per_quality:
                 self.one_per_quality(filtered_streams, username)
             if simple_mode:

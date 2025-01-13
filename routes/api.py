@@ -269,7 +269,7 @@ async def admin_page(
                 if 'timestamp' in entry:
                     try:
                         dt = datetime.fromisoformat(entry['timestamp'])
-                        entry['timestamp'] = dt.strftime('%m/%d/%y')
+                        entry['timestamp'] = dt.strftime('%m/%d/%y %I:%M %p')
                     except:
                         entry['timestamp'] = 'Unknown'
             user_histories[username] = history[:25]  # Get last 25 entries
@@ -306,6 +306,7 @@ async def add_user(
     vidi_mode = form_data.get("vidi_mode") == "on"
     simple_format = form_data.get("simple_format") == "on"
     one_per_quality = form_data.get("one_per_quality") == "on"
+    cached_only = form_data.get("cached_only") == "on"
 
     if not username or not password:
         raise HTTPException(status_code=400, detail="Username and password required")
@@ -332,7 +333,8 @@ async def add_user(
         "enabled_services": [],
         "vidi_mode": vidi_mode,
         "simple_format": simple_format,
-        "one_per_quality": one_per_quality
+        "one_per_quality": one_per_quality,
+        "cached_only": cached_only
     }
     save_users(users)
 
@@ -469,6 +471,34 @@ async def toggle_one_per_quality(
         "status": "success",
         "message": "One per quality toggled successfully",
         "one_per_quality": users[username]["one_per_quality"],
+    }
+
+
+@router.post("/admin/toggle_cached_only/{username}")
+async def toggle_cached_only(
+    username: str, credentials: HTTPBasicCredentials = Depends(HTTPBasic())
+):
+    if not admin_auth.verify_admin(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    users = load_users()
+    if username not in users:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    users[username]["cached_only"] = not users[username].get("cached_only", False)
+    save_users(users)
+
+    logger.info(
+        f"Toggled cached only for user: {username} (now: {users[username]['cached_only']})"
+    )
+    return {
+        "status": "success",
+        "message": "Cached only toggled successfully",
+        "cached_only": users[username]["cached_only"],
     }
 
 
@@ -644,6 +674,7 @@ async def user_manifest(user_path: str):
 Options:
 {"🔐 Proxy Enabled" if proxy_streams else "🔓 Proxy Disabled"} {"(MediaFlow)" if mediaflow_enabled else "(Internal)"}
 {"📝 Simple Formatting On" if simple_format else "📝 Simple Formatting Off"}
+{"💾 Cached Content Only" if user_data.get('cached_only', False) else "💾 Uncached Content Available"}
 
 Enabled Addons:
 {enabled_services_str}

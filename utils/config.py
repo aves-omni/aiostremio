@@ -67,6 +67,17 @@ class Config:
         except Exception:
             return False
 
+    def get_user_cached_only(self, username: str) -> bool:
+        users_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "db/users.json"
+        )
+        try:
+            with open(users_path, "r") as f:
+                users = json.load(f)
+                return users.get(username, {}).get("cached_only", False)
+        except Exception:
+            return False
+
     @property
     def debrid_service(self) -> str:
         return self._config.get("debrid_service")

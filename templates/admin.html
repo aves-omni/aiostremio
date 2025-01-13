@@ -329,14 +329,24 @@
             width: 100%;
         }
 
+        .manage-user-btn {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .user-list li {
                 display: block;
             }
 
             .user-actions {
+                display: none;
+            }
+
+            .user-actions.show {
+                display: flex;
                 flex-direction: column;
                 gap: 0.75rem;
+                margin-top: 1rem;
             }
 
             .user-actions > button,
@@ -359,6 +369,26 @@
             .username {
                 text-align: center;
                 margin-bottom: 1.25rem;
+            }
+
+            .manage-user-btn {
+                display: flex !important;
+                width: 100%;
+                margin-top: 1rem;
+                background-color: var(--button-bg);
+                color: white;
+                border: none;
+                border-radius: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .manage-user-btn:hover {
+                background-color: var(--button-hover);
             }
         }
 
@@ -459,16 +489,21 @@
                 <label for="one_per_quality">Best Per Resolution</label>
                 <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Shows the best available stream for each resolution and hides the rest</small>
             </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="cached_only" name="cached_only">
+                <label for="cached_only">Cached Content Only</label>
+                <small style="display: block; color: var(--text-color); opacity: 0.7; margin-left: 1.8rem;">Shows only cached content that is immediately available</small>
+            </div>
         </div>
         <button type="submit">Add User</button>
     </form>
 
     <div class="user-list">
-        <h2>Current Users</h2>
         <ul>
             {% for username, details in users.items() %}
             <li data-username="{{ username }}">
                 <span class="username">{{ username }}{% if user_last_active[username] != "never" %} (Active {{ user_last_active[username] }}){% endif %}</span>
+                <button class="manage-user-btn" onclick="toggleUserActions('{{ username }}')">Manage User</button>
                 <div class="user-actions">
                     {% if user_histories[username] %}
                     <button onclick="toggleHistory('{{ username }}')" id="history-btn-{{ username }}">
@@ -486,6 +521,9 @@
                     </button>
                     <button onclick="toggleOnePerQuality('{{ username }}')" id="quality-btn-{{ username }}">
                         Best Per Resolution: {{ 'On' if details.one_per_quality else 'Off' }}
+                    </button>
+                    <button onclick="toggleCachedOnly('{{ username }}')" id="cached-btn-{{ username }}">
+                        Cached Only: {{ 'On' if details.cached_only else 'Off' }}
                     </button>
                     <button onclick="deleteUser('{{ username }}')" style="background-color: #dc3545;">Delete User</button>
                     <div class="services-dropdown">
@@ -748,6 +786,21 @@
             }
         }
 
+        async function toggleCachedOnly(username) {
+            try {
+                const response = await fetch(`/admin/toggle_cached_only/${username}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const cachedButton = document.getElementById(`cached-btn-${username}`);
+                    cachedButton.textContent = `Cached Only: ${result.cached_only ? 'On' : 'Off'}`;
+                }
+            } catch (error) {
+                console.error(`Error toggling cached only for ${username}:`, error);
+            }
+        }
+
         async function deleteUser(username) {
             if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
                 return;
@@ -778,6 +831,18 @@
             } else {
                 historyDiv.classList.add('show');
                 toggleButton.textContent = 'Hide History';
+            }
+        }
+
+        function toggleUserActions(username) {
+            const userActions = document.querySelector(`li[data-username="${username}"] .user-actions`);
+            const manageButton = document.querySelector(`li[data-username="${username}"] .manage-user-btn`);
+            if (userActions.classList.contains('show')) {
+                userActions.classList.remove('show');
+                manageButton.textContent = 'Manage User';
+            } else {
+                userActions.classList.add('show');
+                manageButton.textContent = 'Hide Actions';
             }
         }
     </script>
