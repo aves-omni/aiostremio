@@ -23,6 +23,7 @@ AIOStremio combines your favorite Stremio addons into one. Easily sync your setu
 
 ## Features
 - Account system
+- Track users' watch history
 - Fetch links from multiple addons
 - Redis cache that instantly returns already fetched links
 - Automatically cache all episodes in a season when any episode from that season is requested
