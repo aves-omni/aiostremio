@@ -143,11 +143,11 @@ app.include_router(router)
 
 
 async def sanity_check():
-    logger.info(f"Performing sanity check...")
+    logger.info("Performing sanity check...")
 
     addon_urls = [service.base_url for service in streaming_services]
 
-    logger.info(f"Addons | Checking addons...")
+    logger.info("Addons | Checking addons...")
 
     for url in addon_urls:
         try:
@@ -164,7 +164,7 @@ async def sanity_check():
             logger.warning(f"Addons | ⚠️ {url} ({str(e)})")
             continue
 
-    logger.info(f"Config | Checking config...")
+    logger.info("Config | Checking config...")
 
     with open("config.json.example", "r") as f:
         example_config = json.load(f)
@@ -183,18 +183,18 @@ async def sanity_check():
 
     validate_config_structure(example_config, config._config)
 
-    logger.info(f"Config | ✅ The config is up to date")
+    logger.info("Config | ✅ The config is up to date")
 
     if (
         not config.debrid_service
         and not os.getenv("MEDIAFUSION_OPTIONS")
         and not (os.getenv("EASYNEWS_USERNAME") and os.getenv("EASYNEWS_PASSWORD"))
     ):
-        logger.warning(f"Config | ⚠️ No services configured")
+        logger.warning("Config | ⚠️ No services configured")
         exit(1)
 
     if config.debrid_service and not os.getenv("DEBRID_API_KEY"):
-        logger.warning(f"Config | ⚠️ Default debrid service is configured but no API key is set")
+        logger.warning("Config | ⚠️ Default debrid service is configured but no API key is set")
         exit(1)
 
     for service_name in config._config.get("addon_config", {}).keys():
